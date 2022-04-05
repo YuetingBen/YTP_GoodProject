@@ -1,0 +1,255 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: Tester BEN PEPS BCM
+
+
+BO_ 1537 YT_SENT: 8 Vector__XXX
+ SG_ YT_SENT_Position : 7|16@0- (1,0) [0|0] "" Vector__XXX
+
+BO_ 1863 YT_Phys_Diag_Rx: 8 Tester
+ SG_ YT_Diag_Request : 7|64@0+ (1,0) [0|0] ""  BEN
+
+BO_ 2015 Func_Diag_Rx: 8 Tester
+ SG_ Func_Diag_Rx : 7|64@0+ (1,0) [0|0] ""  BEN
+
+BO_ 1312 TESE_NM: 8 Vector__XXX
+ SG_ TEST_NMDataField : 15|56@0+ (1,0) [0|0] ""  BEN
+ SG_ TEST_NodeAddress : 7|8@0+ (1,0) [0|255] ""  BEN
+
+BO_ 96 PEPS_1: 8 Vector__XXX
+ SG_ PEPS_DoorLockReq : 4|1@0+ (1,0) [0|1] ""  BEN
+
+BO_ 784 BCM_1: 8 Vector__XXX
+ SG_ BCM_LockSt : 55|1@0+ (1,0) [0|1] ""  BEN
+ SG_ BCM_DriverDoorSt : 14|1@0+ (1,0) [0|1] ""  BEN
+ SG_ BCM_KeySt : 9|2@0+ (1,0) [0|3] ""  BEN
+
+BO_ 1991 YT_Diag_Tx: 8 BEN
+ SG_ YT_Diag_Response : 7|64@0+ (1,0) [0|0] ""  Tester
+
+BO_ 1296 YT_NM: 8 BEN
+ SG_ YT_SubNetWakeRq : 31|8@0+ (1,0) [0|255] "-" Vector__XXX
+ SG_ YT_NMDataField2 : 39|32@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ YT_NMDataField1 : 15|16@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ YT_NodeAddress : 7|8@0+ (1,0) [0|255] "" Vector__XXX
+
+BO_ 768 YT_1: 8 BEN
+ SG_ YT_1_Checksum : 63|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ YT_1_MsgCounter : 55|4@0+ (1,0) [0|15] "" Vector__XXX
+ SG_ YT_St : 1|2@0+ (1,0) [0|3] "" Vector__XXX
+
+
+
+CM_ SG_ 1863 YT_Diag_Request "Diagnostic physical request";
+CM_ SG_ 1312 TEST_NMDataField "TEST Network management data";
+CM_ SG_ 1312 TEST_NodeAddress "TEST node address";
+CM_ SG_ 96 PEPS_DoorLockReq "Door lock request";
+CM_ SG_ 784 BCM_LockSt "Central lock switch status";
+CM_ SG_ 784 BCM_DriverDoorSt "Driver door ajar status";
+CM_ SG_ 784 BCM_KeySt "Ignition key position status";
+CM_ SG_ 1991 YT_Diag_Response "YT diagnostic response";
+CM_ SG_ 1296 YT_SubNetWakeRq "SubNet wake up request";
+CM_ SG_ 1296 YT_NMDataField2 "YT Network management data";
+CM_ SG_ 1296 YT_NMDataField1 "YT Network management data";
+CM_ SG_ 1296 YT_NodeAddress "YT node adress";
+CM_ SG_ 768 YT_St "locking/unlocking status of YT";
+BA_DEF_  "BusType" STRING ;
+BA_DEF_ SG_  "GenSigTimeoutValue" INT 0 16777000;
+BA_DEF_ BO_  "GenMsgCycleTimeFast" INT 0 65535;
+BA_DEF_ BO_  "TpTxIndex" INT 0 99;
+BA_DEF_ SG_  "GenSigTimeoutTime_YT" INT 0 65535;
+BA_DEF_ SG_  "GenSigTimeoutMsg_YT" HEX 0 16777215;
+BA_DEF_  "ILTxTimeout" INT 0 65535;
+BA_DEF_ BO_  "GenMsgFastOnStart" INT 0 65535;
+BA_DEF_ BO_  "GenMsgMinAcceptLenght" INT -1 8;
+BA_DEF_ BO_  "DiagUudtResponse" ENUM  "false","true";
+BA_DEF_ BO_  "DiagState" ENUM  "No","Yes";
+BA_DEF_ BO_  "DiagResponse" ENUM  "No","Yes";
+BA_DEF_ BO_  "DiagRequest" ENUM  "No","Yes";
+BA_DEF_ BU_  "NmAsrCanMsgReducedTime" INT 1 65535;
+BA_DEF_ BU_  "NmAsrCanMsgCycleOffset" INT 0 65535;
+BA_DEF_  "NmAsrCanMsgCycleTime" INT 1 65535;
+BA_DEF_  "NmAsrRepeatMessageTime" INT 0 65535;
+BA_DEF_  "NmAsrWaitBusSleepTime" INT 0 65535;
+BA_DEF_ BU_  "NmAsrNodeIdentifier" HEX 0 255;
+BA_DEF_  "NmAsrTimeoutTime" INT 1 65535;
+BA_DEF_  "NmAsrBaseAddress" HEX 0 2047;
+BA_DEF_  "NmAsrMessageCount" INT 0 256;
+BA_DEF_ BO_  "NmAsrMessage" ENUM  "No","Yes";
+BA_DEF_ BU_  "NmAsrNode" ENUM  "No","Yes","vector_leerstring";
+BA_DEF_  "NmType" STRING ;
+BA_DEF_ SG_  "GatewayedSignals" ENUM  "No","Yes";
+BA_DEF_  "Manufacturer" STRING ;
+BA_DEF_ BU_  "NodelayerModules" STRING ;
+BA_DEF_ SG_  "GenSigStartValue" HEX 0 16777215;
+BA_DEF_ SG_  "GenSigSendType" ENUM  "Cyclic","OnWrite","OnWriteWithRepetition","OnChange","OnChangeWithRepetition","IfActive","IfActiveWithRepetition","NoSigSendType";
+BA_DEF_ BO_  "GenMsgStartDelayTime" INT 0 65535;
+BA_DEF_ BU_  "ILUsed" ENUM  "No","Yes";
+BA_DEF_ BO_  "GenMsgILSupport" ENUM  "No","Yes";
+BA_DEF_ BO_  "GenMsgNrOfRepetition" INT 0 999999;
+BA_DEF_ BO_  "GenMsgDelayTime" INT 0 65535;
+BA_DEF_ BO_  "GenMsgCycleTime" INT 0 65535;
+BA_DEF_ BO_  "GenMsgSendType" ENUM  "Cyclic","NotUsed","NotUsed","NotUsed","NotUsed","Cyclic","NotUsed","IfActive","NoMsgSendType";
+BA_DEF_REL_ BU_SG_REL_  "GenSigSuprvRespSubValue" INT 0 16777000;
+BA_DEF_REL_ BU_SG_REL_  "GenSigSuprvResp" ENUM  "None","TimeoutFlag","TimeoutDefaultValue","TimeoutFlag and TimeoutDefaultValue";
+BA_DEF_DEF_  "BusType" "";
+BA_DEF_DEF_  "GenSigTimeoutValue" 0;
+BA_DEF_DEF_  "GenMsgCycleTimeFast" 0;
+BA_DEF_DEF_  "TpTxIndex" 0;
+BA_DEF_DEF_  "GenSigTimeoutTime_YT" 0;
+BA_DEF_DEF_  "GenSigTimeoutMsg_YT" 0;
+BA_DEF_DEF_  "ILTxTimeout" 0;
+BA_DEF_DEF_  "GenMsgFastOnStart" 0;
+BA_DEF_DEF_  "GenMsgMinAcceptLenght" -1;
+BA_DEF_DEF_  "DiagUudtResponse" "false";
+BA_DEF_DEF_  "DiagState" "No";
+BA_DEF_DEF_  "DiagResponse" "No";
+BA_DEF_DEF_  "DiagRequest" "No";
+BA_DEF_DEF_  "NmAsrCanMsgReducedTime" 150;
+BA_DEF_DEF_  "NmAsrCanMsgCycleOffset" 0;
+BA_DEF_DEF_  "NmAsrCanMsgCycleTime" 200;
+BA_DEF_DEF_  "NmAsrRepeatMessageTime" 1000;
+BA_DEF_DEF_  "NmAsrWaitBusSleepTime" 5000;
+BA_DEF_DEF_  "NmAsrNodeIdentifier" 0;
+BA_DEF_DEF_  "NmAsrTimeoutTime" 1000;
+BA_DEF_DEF_  "NmAsrBaseAddress" 1280;
+BA_DEF_DEF_  "NmAsrMessageCount" 128;
+BA_DEF_DEF_  "NmAsrMessage" "No";
+BA_DEF_DEF_  "NmAsrNode" "Yes";
+BA_DEF_DEF_  "NmType" "NmAsr";
+BA_DEF_DEF_  "GatewayedSignals" "No";
+BA_DEF_DEF_  "Manufacturer" "GAC";
+BA_DEF_DEF_  "NodelayerModules" "CANoeILNLVector.dll";
+BA_DEF_DEF_  "GenSigStartValue" 0;
+BA_DEF_DEF_  "GenSigSendType" "NoSigSendType";
+BA_DEF_DEF_  "GenMsgStartDelayTime" 0;
+BA_DEF_DEF_  "ILUsed" "Yes";
+BA_DEF_DEF_  "GenMsgILSupport" "Yes";
+BA_DEF_DEF_  "GenMsgNrOfRepetition" 0;
+BA_DEF_DEF_  "GenMsgDelayTime" 10;
+BA_DEF_DEF_  "GenMsgCycleTime" 0;
+BA_DEF_DEF_  "GenMsgSendType" "Cyclic";
+BA_DEF_DEF_REL_ "GenSigSuprvRespSubValue" 0;
+BA_DEF_DEF_REL_ "GenSigSuprvResp" "None";
+BA_ "BusType" "CAN";
+BA_ "NmAsrNodeIdentifier" BU_ BEN 71;
+BA_ "DiagRequest" BO_ 1863 1;
+BA_ "GenMsgILSupport" BO_ 1863 0;
+BA_ "GenMsgSendType" BO_ 1863 8;
+BA_ "DiagState" BO_ 1863 1;
+BA_ "GenMsgNrOfRepetition" BO_ 1863 0;
+BA_ "DiagState" BO_ 2015 1;
+BA_ "GenMsgILSupport" BO_ 2015 0;
+BA_ "GenMsgSendType" BO_ 2015 8;
+BA_ "GenMsgCycleTime" BO_ 2015 0;
+BA_ "GenMsgMinAcceptLenght" BO_ 1312 1;
+BA_ "GenMsgILSupport" BO_ 1312 1;
+BA_ "GenMsgSendType" BO_ 1312 0;
+BA_ "GenMsgCycleTime" BO_ 1312 200;
+BA_ "NmAsrMessage" BO_ 1312 1;
+BA_ "GenMsgNrOfRepetition" BO_ 96 3;
+BA_ "GenMsgILSupport" BO_ 96 1;
+BA_ "GenMsgSendType" BO_ 96 8;
+BA_ "GenMsgCycleTime" BO_ 96 0;
+BA_ "GenMsgILSupport" BO_ 784 1;
+BA_ "GenMsgSendType" BO_ 784 0;
+BA_ "GenMsgCycleTime" BO_ 784 20;
+BA_ "DiagResponse" BO_ 1991 1;
+BA_ "GenMsgILSupport" BO_ 1991 0;
+BA_ "GenMsgSendType" BO_ 1991 8;
+BA_ "GenMsgCycleTime" BO_ 1991 0;
+BA_ "GenMsgILSupport" BO_ 1296 1;
+BA_ "GenMsgSendType" BO_ 1296 0;
+BA_ "GenMsgCycleTime" BO_ 1296 200;
+BA_ "NmAsrMessage" BO_ 1296 1;
+BA_ "GenMsgILSupport" BO_ 768 1;
+BA_ "GenMsgSendType" BO_ 768 0;
+BA_ "GenMsgCycleTime" BO_ 768 50;
+BA_ "GatewayedSignals" SG_ 2015 Func_Diag_Rx 0;
+BA_ "GenSigSendType" SG_ 2015 Func_Diag_Rx 7;
+BA_ "GenSigStartValue" SG_ 2015 Func_Diag_Rx 0;
+BA_ "GatewayedSignals" SG_ 1312 TEST_NMDataField 0;
+BA_ "GenSigSendType" SG_ 1312 TEST_NMDataField 7;
+BA_ "GenSigStartValue" SG_ 1312 TEST_NMDataField 0;
+BA_ "GatewayedSignals" SG_ 1312 TEST_NodeAddress 0;
+BA_ "GenSigSendType" SG_ 1312 TEST_NodeAddress 7;
+BA_ "GenSigStartValue" SG_ 1312 TEST_NodeAddress 40;
+BA_ "GatewayedSignals" SG_ 96 PEPS_DoorLockReq 0;
+BA_ "GenSigSendType" SG_ 96 PEPS_DoorLockReq 4;
+BA_ "GenSigStartValue" SG_ 96 PEPS_DoorLockReq 0;
+BA_ "GatewayedSignals" SG_ 784 BCM_LockSt 0;
+BA_ "GenSigSendType" SG_ 784 BCM_LockSt 7;
+BA_ "GenSigStartValue" SG_ 784 BCM_LockSt 0;
+BA_ "GenSigTimeoutMsg_YT" SG_ 784 BCM_LockSt 885;
+BA_ "GenSigTimeoutTime_YT" SG_ 784 BCM_LockSt 90;
+BA_ "GatewayedSignals" SG_ 784 BCM_DriverDoorSt 0;
+BA_ "GenSigSendType" SG_ 784 BCM_DriverDoorSt 7;
+BA_ "GenSigStartValue" SG_ 784 BCM_DriverDoorSt 0;
+BA_ "GenSigTimeoutMsg_YT" SG_ 784 BCM_DriverDoorSt 885;
+BA_ "GenSigTimeoutTime_YT" SG_ 784 BCM_DriverDoorSt 90;
+BA_ "GatewayedSignals" SG_ 784 BCM_KeySt 0;
+BA_ "GenSigSendType" SG_ 784 BCM_KeySt 7;
+BA_ "GenSigStartValue" SG_ 784 BCM_KeySt 0;
+BA_ "GenSigTimeoutMsg_YT" SG_ 784 BCM_KeySt 885;
+BA_ "GenSigTimeoutTime_YT" SG_ 784 BCM_KeySt 90;
+BA_ "GatewayedSignals" SG_ 1991 YT_Diag_Response 0;
+BA_ "GenSigSendType" SG_ 1991 YT_Diag_Response 7;
+BA_ "GenSigStartValue" SG_ 1991 YT_Diag_Response 0;
+BA_ "GenSigSendType" SG_ 1296 YT_SubNetWakeRq 0;
+BA_ "GatewayedSignals" SG_ 1296 YT_NMDataField1 0;
+BA_ "GenSigSendType" SG_ 1296 YT_NMDataField1 7;
+BA_ "GenSigStartValue" SG_ 1296 YT_NMDataField1 0;
+BA_ "GatewayedSignals" SG_ 1296 YT_NodeAddress 0;
+BA_ "GenSigSendType" SG_ 1296 YT_NodeAddress 7;
+BA_ "GenSigStartValue" SG_ 1296 YT_NodeAddress 71;
+BA_ "GatewayedSignals" SG_ 768 YT_1_Checksum 1;
+BA_ "GenSigSendType" SG_ 768 YT_1_Checksum 7;
+BA_ "GenSigStartValue" SG_ 768 YT_1_Checksum 0;
+BA_ "GenSigTimeoutValue" SG_ 768 YT_1_Checksum 255;
+BA_ "GatewayedSignals" SG_ 768 YT_1_MsgCounter 1;
+BA_ "GenSigSendType" SG_ 768 YT_1_MsgCounter 7;
+BA_ "GenSigStartValue" SG_ 768 YT_1_MsgCounter 0;
+BA_ "GatewayedSignals" SG_ 768 YT_St 1;
+BA_ "GenSigSendType" SG_ 768 YT_St 7;
+BA_ "GenSigStartValue" SG_ 768 YT_St 0;
+BA_REL_ "GenSigSuprvResp" BU_SG_REL_ BEN SG_ 784 BCM_LockSt 3;
+BA_REL_ "GenSigSuprvResp" BU_SG_REL_ BEN SG_ 784 BCM_DriverDoorSt 3;
+BA_REL_ "GenSigSuprvResp" BU_SG_REL_ BEN SG_ 784 BCM_KeySt 3;
+VAL_ 96 PEPS_DoorLockReq 1 "Lock" 0 "No command" ;
+VAL_ 784 BCM_LockSt 1 "Pressed" 0 "Not pressed" ;
+VAL_ 784 BCM_DriverDoorSt 1 "Open" 0 "Closed" ;
+VAL_ 784 BCM_KeySt 3 "Crank" 2 "On" 1 "Acc" 0 "Off" ;
+

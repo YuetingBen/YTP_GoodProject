@@ -1,0 +1,57 @@
+/*@!Encoding:936*/
+includes
+{
+  
+}
+
+variables
+{
+  byte testValue_b;
+  word testValue_w;
+  message PEPS_1 PEPS_1_Frame;/* 定义消息 */
+  message BCM_1 BCM_1_Frame;/* 定义消息 */
+  msTimer TestTimer;/* 定义定时器，毫秒为单位 */
+  
+struct Data /* 结构体定义 */
+{
+  int type;
+  long l;
+  char name[50];
+};
+
+enum Colors /* 枚举类型定义 */
+{ 
+  Red, 
+  Green, 
+  Blue 
+};
+enum Colors TestColor; /* 枚举类型变量声明 */
+
+struct Data testData; /* 结构体类型变量声明 */
+
+
+}
+
+On key 'a' /* 键盘事件 */
+{
+  TestColor = Green; /* 枚举类型变量赋值 */
+  setTimer(TestTimer, 1000); /* 设置定时器TestTimer， 1000毫秒后触发 */
+}
+
+On timer TestTimer /* 定时器事件 */
+{
+  output(PEPS_1_Frame); /* 发送消息PEPS_1_Frame */
+}
+
+
+On key 'b' /* 键盘事件 */
+{
+  /* 消息内容按DBC结构赋值 */
+  BCM_1_Frame.BCM_KeySt = 2;
+  
+  output(BCM_1_Frame); /* 发送消息PEPS_1_Frame */
+}
+
+
+
+

@@ -74,9 +74,12 @@ typedef struct
 {
   uint8_t dataBufferArray[12];
   uint8_t dataBufferIndex;
+  
   uint8_t id;
   uint8_t pid;
   uint8_t length;
+  uint8_t dataArray[8];
+  uint8_t checksum;
 }LIN_DATA_S;
 
 static LIN_DATA_S linTransferData;
@@ -91,11 +94,10 @@ const osEventFlagsAttr_t uartEvent_attributes = {
   .name = "uartEvent"
 };
 
-uint8_t testFlag;
-static uint8_t LinReceiveData[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
+extern uint16_t positionValue;
 
 static uint8_t LIN_ComputeLen(uint8_t linId);
+static uint8_t LIN_ComputeChecksum(LIN_DATA_S *linMessage);
 void HAL_UART_RxManage(void);
 /* USER CODE END 0 */
 
@@ -191,23 +193,6 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
-
-
-
-
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(huart);
-
-  testFlag++;
-  /* NOTE: This function should not be modified, when the callback is needed,
-           the HAL_UART_RxCpltCallback could be implemented in the user file
-   */
-}
-
-
-
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   /* Prevent unused argument(s) compilation warning */
@@ -220,12 +205,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
      HAL_UART_RxManage();
    }
-}
-
-
-void HAL_UART_TransmitHeader()
-{
-  
 }
 
 static uint8_t LIN_ComputeLen(uint8_t linId)
@@ -252,6 +231,38 @@ static uint8_t LIN_ComputeLen(uint8_t linId)
     retLen = 2;
   }
   return retLen;
+}
+
+
+static uint8_t LIN_ComputeChecksum(LIN_DATA_S *linMessage)
+{
+  /* The LIN checksum is the inverted sum-with-carry of all data bytes */
+  uint16_t tmpValue;
+  uint8_t i;
+
+  if ((0x3C == linMessage->id) ||
+      (0x3D ==  linMessage->id))
+  {
+    tmpValue = 0U;  /* Classic checksum without ID */
+  }
+  else 
+  {
+    tmpValue = linMessage->pid; /* Enhanced checksum without ID */
+  }
+
+  
+  /* Sum data bytes */
+  for(i = 0; i < linMessage->length; i++)
+  {
+    tmpValue += linMessage->dataArray[i];
+    
+    /* Add carries */
+    tmpValue += (tmpValue >> 8U);
+    tmpValue &= 0xFFU;
+  }
+  
+  /* Return inverted sum (byte) */
+  return (~((uint8_t)tmpValue));
 }
 
 void HAL_UART_RxManage(void)
@@ -308,24 +319,15 @@ void HAL_UART_RxManage(void)
 void HAL_UART_Task(void * argument)
 {
   static uint8_t linSentdataArray[8] = {0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56};
-  static uint8_t linSentdataCheckSum = 0xB7;
-  
-  uint8_t lin_data1;
-  uint8_t LIN_RPID;
-  uint8_t TstLin1_MASTER_SendBuff[9];
 
-  uint8_t LinData[8] = {0x00, 0x00, 0xBD, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-
-  lin_data1 = 0x55;
-  LIN_RPID = 0x42;
-
+  uint8_t i;
+  uint8_t tmpValue;
   uint8_t r_event;
 
 
   HAL_GPIO_WritePin(LIN_SLEEP_GPIO_Port, LIN_SLEEP_Pin, GPIO_PIN_SET);
 
-  UART_Start_Receive_IT(&huart1, LinReceiveData, 1);
+  UART_Start_Receive_IT(&huart1, &tmpValue, 1);
 
   uartEventHandle = osEventFlagsNew(&uartEvent_attributes);
   
@@ -337,16 +339,28 @@ void HAL_UART_Task(void * argument)
                                 pdTRUE,
                                 pdTRUE,
                                 osWaitForever);
-    
-    
+
     {
-      while(HAL_UART_Transmit_IT(&huart1, linSentdataArray, linTransferData.length) != HAL_OK);
-      while(HAL_UART_Transmit_IT(&huart1, &linSentdataCheckSum , 1) != HAL_OK);
+      linSentdataArray[0] = (uint8_t)(positionValue);
+      linSentdataArray[1] = (uint8_t)(positionValue >> 8);
+      
+      linSentdataArray[7]++;
+      
+      for(i = 0; i < linTransferData.length; i++)
+      {
+        linTransferData.dataArray[i] = linSentdataArray[i];
+      }
+      linTransferData.checksum = LIN_ComputeChecksum(&linTransferData);
+      
+      while(HAL_UART_Transmit_IT(&huart1, linTransferData.dataArray, linTransferData.length) != HAL_OK);
+      while(HAL_UART_Transmit_IT(&huart1, &linTransferData.checksum , 1) != HAL_OK);
+      /* Clear rx interrupt */
+      osDelay(1);
+      UART_Start_Receive_IT(&huart1, &tmpValue, 1);
       
       linState = LIN_STATE_IDLE;
       linTransferData.dataBufferIndex = 0;
     } 
-    osDelay(100);
   }
 }
 

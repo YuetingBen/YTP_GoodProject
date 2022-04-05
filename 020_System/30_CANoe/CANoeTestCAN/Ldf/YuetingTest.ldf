@@ -1,0 +1,92 @@
+
+
+LIN_description_file;
+LIN_protocol_version = "2.1";
+LIN_language_version = "2.1";
+LIN_speed = 19.2 kbps;
+
+Nodes {
+  Master: LIN_Master, 1 ms, 0 ms ;
+  Slaves: Yueting ;
+}
+
+Signals {
+  YT_SENT_Position: 16, 0, Yueting, LIN_Master ;
+}
+
+Diagnostic_signals {
+  MasterReqB0: 8, 0 ;
+  MasterReqB1: 8, 0 ;
+  MasterReqB2: 8, 0 ;
+  MasterReqB3: 8, 0 ;
+  MasterReqB4: 8, 0 ;
+  MasterReqB5: 8, 0 ;
+  MasterReqB6: 8, 0 ;
+  MasterReqB7: 8, 0 ;
+  SlaveRespB0: 8, 0 ;
+  SlaveRespB1: 8, 0 ;
+  SlaveRespB2: 8, 0 ;
+  SlaveRespB3: 8, 0 ;
+  SlaveRespB4: 8, 0 ;
+  SlaveRespB5: 8, 0 ;
+  SlaveRespB6: 8, 0 ;
+  SlaveRespB7: 8, 0 ;
+}
+
+
+
+Frames {
+  YT_SENT: 3, Yueting, 8 {
+    YT_SENT_Position, 0 ;
+  }
+}
+
+
+
+Diagnostic_frames {
+  MasterReq: 0x3c {
+    MasterReqB0, 0 ;
+    MasterReqB1, 8 ;
+    MasterReqB2, 16 ;
+    MasterReqB3, 24 ;
+    MasterReqB4, 32 ;
+    MasterReqB5, 40 ;
+    MasterReqB6, 48 ;
+    MasterReqB7, 56 ;
+  }
+  SlaveResp: 0x3d {
+    SlaveRespB0, 0 ;
+    SlaveRespB1, 8 ;
+    SlaveRespB2, 16 ;
+    SlaveRespB3, 24 ;
+    SlaveRespB4, 32 ;
+    SlaveRespB5, 40 ;
+    SlaveRespB6, 48 ;
+    SlaveRespB7, 56 ;
+  }
+}
+
+Node_attributes {
+  Yueting{
+    LIN_protocol = "2.1" ;
+    configured_NAD = 0xFF ;
+    initial_NAD = 0xFF ;
+    product_id = 0x0, 0x0, 255 ;
+    P2_min = 50 ms ;
+    ST_min = 0 ms ;
+    N_As_timeout = 1000 ms ;
+    N_Cr_timeout = 1000 ms ;
+    configurable_frames {
+      YT_SENT ;
+    }
+  }
+}
+
+Schedule_tables {
+ ScheduleTable {
+    YT_SENT delay 10 ms ;
+  }
+}
+
+
+

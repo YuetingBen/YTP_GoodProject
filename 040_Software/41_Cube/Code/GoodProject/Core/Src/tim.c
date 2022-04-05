@@ -21,10 +21,10 @@
 #include "tim.h"
 
 /* USER CODE BEGIN 0 */
-  static uint16_t dataList[30];
+static uint16_t dataList[30];
 
-  uint16_t positionValue;
-  static uint8_t index;
+uint16_t positionValue;
+static uint8_t index;
 /* USER CODE END 0 */
 
 TIM_HandleTypeDef htim1;
@@ -247,6 +247,35 @@ void HAL_TIM_PWM_MspDeInit(TIM_HandleTypeDef* tim_pwmHandle)
 }
 
 /* USER CODE BEGIN 1 */
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+  static uint16_t counter;
+  static uint16_t counterOld;
+  static uint16_t counterDelta;
+  
+  /* Prevent unused argument(s) compilation warning */
+  if(htim->Instance==TIM1)
+  {
+    counter = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
+    counterDelta = counter - counterOld;
+    if((counterDelta > 158) && (counterDelta < 178))
+    {
+      index = 0;
+    }
+    dataList[index] = counterDelta/3 - 12;
+    index++;
+  }
+
+  positionValue = dataList[2] * 256 + dataList[3] * 16 + dataList[4];
+  counterOld = counter;
+  /* NOTE : This function should not be modified, when the callback is needed,
+            the HAL_TIM_IC_CaptureCallback could be implemented in the user file
+   */
+}
+
+
+
+
 void HAL_TIM_Task(void * argument)
 {
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
