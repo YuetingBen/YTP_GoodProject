@@ -18,7 +18,7 @@
         <LeaveTargetRunning>_ 0</LeaveTargetRunning>
     </StLinkDriver>
     <DebugChecksum>
-        <Checksum>1263985904</Checksum>
+        <Checksum>2203648605</Checksum>
     </DebugChecksum>
     <Exceptions>
         <StopOnUncaught>_ 0</StopOnUncaught>
@@ -37,6 +37,9 @@
         <CStepIntDis>_ 0</CStepIntDis>
         <LeaveTargetRunning>_ 0</LeaveTargetRunning>
     </JLinkDriver>
+    <array_types>
+        <Fmt0>uint8_t[30]	3	0</Fmt0>
+    </array_types>
     <Trace1>
         <Enabled>0</Enabled>
         <ShowSource>1</ShowSource>

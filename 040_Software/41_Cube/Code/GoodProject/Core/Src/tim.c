@@ -21,7 +21,7 @@
 #include "tim.h"
 
 /* USER CODE BEGIN 0 */
-static uint16_t dataList[30];
+static uint8_t dataList[30];
 
 uint16_t positionValue;
 static uint8_t index;
@@ -89,9 +89,9 @@ void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 72-1;
+  htim3.Init.Prescaler = 36-1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 1000-1;
+  htim3.Init.Period = 100-1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -145,12 +145,6 @@ void HAL_TIM_IC_MspInit(TIM_HandleTypeDef* tim_icHandle)
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     /* TIM1 interrupt Init */
-    HAL_NVIC_SetPriority(TIM1_BRK_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(TIM1_BRK_IRQn);
-    HAL_NVIC_SetPriority(TIM1_UP_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(TIM1_UP_IRQn);
-    HAL_NVIC_SetPriority(TIM1_TRG_COM_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(TIM1_TRG_COM_IRQn);
     HAL_NVIC_SetPriority(TIM1_CC_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
   /* USER CODE BEGIN TIM1_MspInit 1 */
@@ -220,9 +214,6 @@ void HAL_TIM_IC_MspDeInit(TIM_HandleTypeDef* tim_icHandle)
     HAL_GPIO_DeInit(GPIOA, GPIO_PIN_8);
 
     /* TIM1 interrupt Deinit */
-    HAL_NVIC_DisableIRQ(TIM1_BRK_IRQn);
-    HAL_NVIC_DisableIRQ(TIM1_UP_IRQn);
-    HAL_NVIC_DisableIRQ(TIM1_TRG_COM_IRQn);
     HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
   /* USER CODE BEGIN TIM1_MspDeInit 1 */
 
@@ -246,27 +237,61 @@ void HAL_TIM_PWM_MspDeInit(TIM_HandleTypeDef* tim_pwmHandle)
   }
 }
 
+
+
+uint8_t crc4_cal(uint8_t *data, uint8_t len)
+{
+  uint8_t CRC4_Table[16]= {0,13,7,10,14,3,9,4,1,12,6,11,15,2,8,5};
+  uint8_t result = 0x03;
+  uint8_t tableNo = 0;
+  uint8_t i;
+  for(i = 0; i < len; i++)    
+  {
+    tableNo = result ^ data[i];
+    result = CRC4_Table[tableNo];
+  }
+  return result;
+}
+
+
 /* USER CODE BEGIN 1 */
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
-  static uint16_t counter;
-  static uint16_t counterOld;
-  static uint16_t counterDelta;
+  static uint32_t counter;
+  static uint32_t counterOld;
+  static uint32_t counterDelta;
   
   /* Prevent unused argument(s) compilation warning */
   if(htim->Instance==TIM1)
   {
     counter = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
-    counterDelta = counter - counterOld;
+    if(counter > counterOld)
+    {
+      counterDelta = counter - counterOld;
+    }
+    else
+    {
+      counterDelta = counter + 65536 - counterOld;
+    }
     if((counterDelta > 158) && (counterDelta < 178))
     {
       index = 0;
     }
-    dataList[index] = counterDelta/3 - 12;
+    dataList[index] = (uint8_t)((counterDelta - 1)/3 + 1 - 12);
+
+    if(index >= 8)
+    {
+      dataList[29] = crc4_cal(&dataList[2], 6);
+      if(dataList[29] == dataList[8] )
+      {
+        positionValue = dataList[2] * 256 + dataList[3] * 16 + dataList[4];
+      }
+    }
+
     index++;
   }
 
-  positionValue = dataList[2] * 256 + dataList[3] * 16 + dataList[4];
+
   counterOld = counter;
   /* NOTE : This function should not be modified, when the callback is needed,
             the HAL_TIM_IC_CaptureCallback could be implemented in the user file

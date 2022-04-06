@@ -169,7 +169,7 @@ void HAL_CAN_Task(void * argument)
     if (HAL_CAN_AddTxMessage(&hcan, &TxHeader, TxData, &TxMailbox) != HAL_OK)
     {
        /* Transmission request Error */
-       Error_Handler();
+       //Error_Handler();
     }
   
     osDelay(10);
