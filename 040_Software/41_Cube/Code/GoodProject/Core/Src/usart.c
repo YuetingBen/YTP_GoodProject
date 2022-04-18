@@ -26,15 +26,19 @@
 #include "event_groups.h"
 #include "cmsis_os2.h"
 
+#define LIN_BREAK_VALUE      0x00u
 #define LIN_SYNC_VALUE      0x55u
-#define LIN_RX_ID      0x04u
-#define LIN_TX_ID      0x03u
+#define LIN_RX_MASTER_ID      0x04u
+#define LIN_TX_YTSENT_ID      0x03u
+
+#define LIN_EVENT_SENT         1 << 0
+#define LIN_EVENT_RECEIVE    1 << 1
 
 #define LIN_DATA_BUFFER_BREAK_INDEX      0
 #define LIN_DATA_BUFFER_SYNC_INDEX       1
 #define LIN_DATA_BUFFER_PID_INDEX        2
 #define LIN_DATA_BUFFER_DATA_INDEX       3
-
+#define LIN_DATA_BUFFER_MAX_INDEX       12
 
 /* ID field bits definition */
 #define LIN_ID_ID0   ((uint8_t) 0x01u)
@@ -66,6 +70,7 @@ typedef enum
   LIN_STATE_RECV_ID,
   LIN_STATE_RECV_DATA,
   LIN_STATE_SEND_DATA,
+  LIN_STATE_IGNORE_DATA,
   LIN_STATE_MAXNUM
 }LIN_STATE_E;
 
@@ -82,21 +87,33 @@ typedef struct
   uint8_t checksum;
 }LIN_DATA_S;
 
+
+
+
 static LIN_DATA_S linTransferData;
 LIN_STATE_E linState = LIN_STATE_IDLE;
 
 
+EventBits_t  eventTrigger;
 
-#define VA_UPDATE_EVENT    0x01
+//static LIN_MASTER_MESSAGE_U linMasterMessage;
+//static LIN_YTSENT_MESSAGE_U linYtSentMessage;
+LIN_MASTER_MESSAGE_U linMasterMessage;
+LIN_YTSENT_MESSAGE_U linYtSentMessage;
 
+/*
 osEventFlagsId_t uartEventHandle;
 const osEventFlagsAttr_t uartEvent_attributes = {
   .name = "uartEvent"
 };
+*/
+EventGroupHandle_t uartEventHandle = NULL;
 
-extern uint16_t positionValue;
+extern osMessageQueueId_t SENT_CurrentPositionHandle;
 
-static uint8_t LIN_ComputeLen(uint8_t linId);
+extern osMessageQueueId_t LIN_MasterTargetPositionHandle;
+extern osMessageQueueId_t LIN_MasterModeCommandHandle;
+
 static uint8_t LIN_ComputeChecksum(LIN_DATA_S *linMessage);
 void HAL_UART_RxManage(void);
 /* USER CODE END 0 */
@@ -207,33 +224,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
    }
 }
 
-static uint8_t LIN_ComputeLen(uint8_t linId)
-{
-  uint8_t retLen;
-  /* The LIN 2.x message length coding is the following :
-  **
-  ** ID5  ID4  Len
-  **   0   0    2
-  **   0   1    2
-  **   1   0    4
-  **   1   1    8
-  */
-  if(0x02 == (linId & 0x30))
-  {
-    retLen = 4;
-  }
-  else if(0x03 == (linId & 0x30))
-  {
-    retLen = 8;
-  }
-  else
-  {
-    retLen = 2;
-  }
-  return retLen;
-}
-
-
 static uint8_t LIN_ComputeChecksum(LIN_DATA_S *linMessage)
 {
   /* The LIN checksum is the inverted sum-with-carry of all data bytes */
@@ -267,12 +257,22 @@ static uint8_t LIN_ComputeChecksum(LIN_DATA_S *linMessage)
 
 void HAL_UART_RxManage(void)
 {  
-  BaseType_t xHigherPriorityTaskWoken;
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  static BaseType_t xResult;
+  
+  uint8_t i;
+  uint8_t tmpValue;
+  
   switch(linState)
   {
     case LIN_STATE_IDLE:
     {
-      linState = LIN_STATE_RECV_SYNC;
+      linTransferData.dataBufferIndex = LIN_DATA_BUFFER_BREAK_INDEX;
+      if(LIN_BREAK_VALUE == linTransferData.dataBufferArray[LIN_DATA_BUFFER_BREAK_INDEX])
+      {
+        linState = LIN_STATE_RECV_SYNC;
+        linTransferData.dataBufferIndex = LIN_DATA_BUFFER_SYNC_INDEX;
+      }
       break;
     }
     case LIN_STATE_RECV_SYNC:
@@ -281,36 +281,62 @@ void HAL_UART_RxManage(void)
       {
         linState = LIN_STATE_RECV_ID;
       }
+      else
+      {
+        linState = LIN_STATE_IDLE;
+        linTransferData.dataBufferIndex = 0;
+      }
       break;
     }
     case LIN_STATE_RECV_ID:
     {
-      if(LIN_ID2PID(LIN_TX_ID) == linTransferData.dataBufferArray[LIN_DATA_BUFFER_PID_INDEX])
+      if(LIN_ID2PID(LIN_TX_YTSENT_ID) == linTransferData.dataBufferArray[LIN_DATA_BUFFER_PID_INDEX])
       {
         linState = LIN_STATE_SEND_DATA;
-        linTransferData.id = LIN_TX_ID;
-        xEventGroupSetBitsFromISR(uartEventHandle, VA_UPDATE_EVENT, &xHigherPriorityTaskWoken);
+        linTransferData.length = 0x08u;
+        linTransferData.id = LIN_TX_YTSENT_ID;
+        linTransferData.pid = LIN_ID2PID(linTransferData.id);
+        xEventGroupSetBitsFromISR(uartEventHandle, LIN_EVENT_SENT, &xHigherPriorityTaskWoken);
       }
-      else if(LIN_ID2PID(LIN_RX_ID) == linTransferData.dataBufferArray[2])
+      else if(LIN_ID2PID(LIN_RX_MASTER_ID) == linTransferData.dataBufferArray[LIN_DATA_BUFFER_PID_INDEX])
       {
-        linTransferData.id = LIN_RX_ID;
         linState = LIN_STATE_RECV_DATA;
+        linTransferData.id = LIN_RX_MASTER_ID;
+        linTransferData.pid = LIN_ID2PID(linTransferData.id);
+        linTransferData.length = 0x08u;
       }
       else
       {
-        /* Do nothing */
+        linState = LIN_STATE_IGNORE_DATA;
       }
-      linTransferData.length = 0x08u;
-      linTransferData.pid = LIN_ID2PID(linTransferData.id);
       break;
     }
     case LIN_STATE_RECV_DATA:
     {
       if((LIN_DATA_BUFFER_DATA_INDEX + linTransferData.length + 1) <= linTransferData.dataBufferIndex)
       {
+        for(i = 0; i < linTransferData.length; i++)
+        {
+          linTransferData.dataArray[i] = linTransferData.dataBufferArray[i + LIN_DATA_BUFFER_DATA_INDEX];
+        }
+        xEventGroupSetBitsFromISR(uartEventHandle, LIN_EVENT_RECEIVE, &xHigherPriorityTaskWoken);
         linState = LIN_STATE_IDLE;
         linTransferData.dataBufferIndex = 0;
       }
+      break;
+    }
+    case LIN_STATE_IGNORE_DATA:
+    {
+      if(LIN_DATA_BUFFER_MAX_INDEX <= linTransferData.dataBufferIndex)
+      {
+        linState = LIN_STATE_IDLE;
+        linTransferData.dataBufferIndex = 0;
+      }
+      break;
+    }
+    default:
+    {
+      linState = LIN_STATE_IDLE;
       break;
     }
   }
@@ -318,49 +344,77 @@ void HAL_UART_RxManage(void)
 
 void HAL_UART_Task(void * argument)
 {
-  static uint8_t linSentdataArray[8] = {0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56};
-
   uint8_t i;
   uint8_t tmpValue;
-  uint8_t r_event;
 
+  uint8_t command;
+  static uint16_t linCurrentPositionValue;
+
+  static uint16_t linMasterTargetPositionValue;
+  static uint16_t linMasterModeCommandValue;
+  
+  static uint16_t linYtSentCurrentPositionValue;
+
+  osStatus_t osStatus;
+  void *msg_ptr;
+  uint8_t *msg_prio;
 
   HAL_GPIO_WritePin(LIN_SLEEP_GPIO_Port, LIN_SLEEP_Pin, GPIO_PIN_SET);
 
   UART_Start_Receive_IT(&huart1, &tmpValue, 1);
 
-  uartEventHandle = osEventFlagsNew(&uartEvent_attributes);
+  uartEventHandle = xEventGroupCreate();
+
+  xEventGroupSetBits(uartEventHandle, LIN_EVENT_RECEIVE);
   
   /* Infinite loop */
   for(;;)
   {
-    r_event = xEventGroupWaitBits(uartEventHandle,
-                                VA_UPDATE_EVENT,
+    eventTrigger = xEventGroupWaitBits(uartEventHandle,
+                                (LIN_EVENT_SENT |LIN_EVENT_RECEIVE) ,
                                 pdTRUE,
-                                pdTRUE,
-                                osWaitForever);
+                                pdFALSE,
+                                1);
 
+    if(LIN_EVENT_SENT == (eventTrigger & LIN_EVENT_SENT))
     {
-      linSentdataArray[0] = (uint8_t)(positionValue);
-      linSentdataArray[1] = (uint8_t)(positionValue >> 8);
-      
-      linSentdataArray[7]++;
-      
-      for(i = 0; i < linTransferData.length; i++)
+      if(LIN_TX_YTSENT_ID == linTransferData.id)
       {
-        linTransferData.dataArray[i] = linSentdataArray[i];
+        for(i = 0; i < linTransferData.length; i++)
+        {
+          linTransferData.dataArray[i] = linYtSentMessage.dataArray[i];
+        }
+        linTransferData.checksum = LIN_ComputeChecksum(&linTransferData);
+        while(HAL_UART_Transmit_IT(&huart1, linTransferData.dataArray, linTransferData.length) != HAL_OK);
+        while(HAL_UART_Transmit_IT(&huart1, &linTransferData.checksum , 1) != HAL_OK);
+        UART_Start_Receive_IT(&huart1, &tmpValue, 1);
       }
-      linTransferData.checksum = LIN_ComputeChecksum(&linTransferData);
-      
-      while(HAL_UART_Transmit_IT(&huart1, linTransferData.dataArray, linTransferData.length) != HAL_OK);
-      while(HAL_UART_Transmit_IT(&huart1, &linTransferData.checksum , 1) != HAL_OK);
-      /* Clear rx interrupt */
-      osDelay(1);
-      UART_Start_Receive_IT(&huart1, &tmpValue, 1);
-      
-      linState = LIN_STATE_IDLE;
-      linTransferData.dataBufferIndex = 0;
-    } 
+    }
+    else if(LIN_EVENT_RECEIVE == (eventTrigger & LIN_EVENT_RECEIVE))
+    {
+      if(LIN_RX_MASTER_ID == linTransferData.id)
+      {
+        for(i = 0; i < linTransferData.length; i++)
+        {
+          linMasterMessage.dataArray[i] = linTransferData.dataArray[i];
+        }
+        linMasterModeCommandValue = linMasterMessage.message.masterModeCommand;
+        linMasterTargetPositionValue = linMasterMessage.message.masterTargetPos;
+        /*
+        osMessageQueuePut(LIN_MasterTargetPositionHandle, (void *)&linMasterTargetPositionValue, 0, 0);
+        osMessageQueuePut(LIN_MasterModeCommandHandle, (void *)&linMasterModeCommandValue, 0, 0);
+        osThreadYield();
+        */
+      }
+    }
+    else
+    {
+      /* Do nothing */
+    }
+    osStatus = osMessageQueueGet(SENT_CurrentPositionHandle, (void *)&linYtSentCurrentPositionValue, msg_prio, 0); 
+    linYtSentMessage.dataArray[0] = (uint8_t)(linYtSentCurrentPositionValue);
+    linYtSentMessage.dataArray[1] = (uint8_t)(linYtSentCurrentPositionValue >> 8);
+    
   }
 }
 

@@ -32,9 +32,11 @@
 #include "usart.h"
 #include "gpio.h"
 #include "tim.h"
+#include "mode.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
+typedef StaticQueue_t osStaticMessageQDef_t;
 /* USER CODE BEGIN PTD */
 
 /* USER CODE END PTD */
@@ -74,7 +76,7 @@ osThreadId_t UARTHandle;
 const osThreadAttr_t UART_attributes = {
   .name = "UART",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 /* Definitions for TIM */
 osThreadId_t TIMHandle;
@@ -82,6 +84,57 @@ const osThreadAttr_t TIM_attributes = {
   .name = "TIM",
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for MODE */
+osThreadId_t MODEHandle;
+const osThreadAttr_t MODE_attributes = {
+  .name = "MODE",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for SENT_CurrentPosition */
+osMessageQueueId_t SENT_CurrentPositionHandle;
+uint8_t SENT_CurrentPositionBuffer[ 1 * sizeof( uint16_t ) ];
+osStaticMessageQDef_t SENT_CurrentPositionControlBlock;
+const osMessageQueueAttr_t SENT_CurrentPosition_attributes = {
+  .name = "SENT_CurrentPosition",
+  .cb_mem = &SENT_CurrentPositionControlBlock,
+  .cb_size = sizeof(SENT_CurrentPositionControlBlock),
+  .mq_mem = &SENT_CurrentPositionBuffer,
+  .mq_size = sizeof(SENT_CurrentPositionBuffer)
+};
+/* Definitions for LIN_MasterTargetPosition */
+osMessageQueueId_t LIN_MasterTargetPositionHandle;
+uint8_t LIN_MasterTargetPositionBuffer[ 1 * sizeof( uint16_t ) ];
+osStaticMessageQDef_t LIN_MasterTargetPositionControlBlock;
+const osMessageQueueAttr_t LIN_MasterTargetPosition_attributes = {
+  .name = "LIN_MasterTargetPosition",
+  .cb_mem = &LIN_MasterTargetPositionControlBlock,
+  .cb_size = sizeof(LIN_MasterTargetPositionControlBlock),
+  .mq_mem = &LIN_MasterTargetPositionBuffer,
+  .mq_size = sizeof(LIN_MasterTargetPositionBuffer)
+};
+/* Definitions for LIN_MasterModeCommand */
+osMessageQueueId_t LIN_MasterModeCommandHandle;
+uint8_t LIN_MasterModeCommandBuffer[ 1 * sizeof( uint8_t ) ];
+osStaticMessageQDef_t LIN_MasterModeCommandControlBlock;
+const osMessageQueueAttr_t LIN_MasterModeCommand_attributes = {
+  .name = "LIN_MasterModeCommand",
+  .cb_mem = &LIN_MasterModeCommandControlBlock,
+  .cb_size = sizeof(LIN_MasterModeCommandControlBlock),
+  .mq_mem = &LIN_MasterModeCommandBuffer,
+  .mq_size = sizeof(LIN_MasterModeCommandBuffer)
+};
+/* Definitions for MODE_MotorOut */
+osMessageQueueId_t MODE_MotorOutHandle;
+uint8_t MODE_MotorOutBuffer[ 2 * sizeof( uint16_t ) ];
+osStaticMessageQDef_t MODE_MotorOutControlBlock;
+const osMessageQueueAttr_t MODE_MotorOut_attributes = {
+  .name = "MODE_MotorOut",
+  .cb_mem = &MODE_MotorOutControlBlock,
+  .cb_size = sizeof(MODE_MotorOutControlBlock),
+  .mq_mem = &MODE_MotorOutBuffer,
+  .mq_size = sizeof(MODE_MotorOutBuffer)
 };
 /* Definitions for Event */
 osEventFlagsId_t EventHandle;
@@ -98,6 +151,7 @@ void StartDefaultTask(void *argument);
 extern void HAL_CAN_Task(void *argument);
 extern void HAL_UART_Task(void *argument);
 extern void HAL_TIM_Task(void *argument);
+extern void MODE_Task(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -123,6 +177,19 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* creation of SENT_CurrentPosition */
+  SENT_CurrentPositionHandle = osMessageQueueNew (1, sizeof(uint16_t), &SENT_CurrentPosition_attributes);
+
+  /* creation of LIN_MasterTargetPosition */
+  LIN_MasterTargetPositionHandle = osMessageQueueNew (1, sizeof(uint16_t), &LIN_MasterTargetPosition_attributes);
+
+  /* creation of LIN_MasterModeCommand */
+  LIN_MasterModeCommandHandle = osMessageQueueNew (1, sizeof(uint8_t), &LIN_MasterModeCommand_attributes);
+
+  /* creation of MODE_MotorOut */
+  MODE_MotorOutHandle = osMessageQueueNew (2, sizeof(uint16_t), &MODE_MotorOut_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -139,6 +206,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of TIM */
   TIMHandle = osThreadNew(HAL_TIM_Task, NULL, &TIM_attributes);
+
+  /* creation of MODE */
+  MODEHandle = osThreadNew(MODE_Task, NULL, &MODE_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   

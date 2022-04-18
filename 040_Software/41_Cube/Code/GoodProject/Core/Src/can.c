@@ -21,7 +21,9 @@
 #include "can.h"
 
 /* USER CODE BEGIN 0 */
+extern uint16_t timerValue;
 extern uint16_t positionValue;
+
 /* USER CODE END 0 */
 
 CAN_HandleTypeDef hcan;
@@ -172,7 +174,7 @@ void HAL_CAN_Task(void * argument)
        //Error_Handler();
     }
   
-    osDelay(10);
+    osDelay(1);
   }
 }
 /* USER CODE END 1 */

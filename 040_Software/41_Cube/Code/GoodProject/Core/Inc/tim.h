@@ -29,7 +29,11 @@ extern "C" {
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
-
+typedef struct
+{
+  uint16_t pwmMotorOutHigh;
+  uint16_t pwmMotorOutLow;
+}PWM_MOTOR_OUT_S;
 /* USER CODE END Includes */
 
 extern TIM_HandleTypeDef htim1;
