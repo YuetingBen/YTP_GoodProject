@@ -238,11 +238,13 @@ void StartDefaultTask(void *argument)
   for(;;)
   {
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-
+    //HAL_GPIO_WritePin(UP_GPIO_Port, UP_Pin, GPIO_PIN_SET);
+    //HAL_GPIO_WritePin(DOWN_GPIO_Port, DOWN_Pin, GPIO_PIN_SET);
     osDelay(500);
 
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-		
+    //HAL_GPIO_WritePin(UP_GPIO_Port, UP_Pin, GPIO_PIN_RESET);
+    //HAL_GPIO_WritePin(DOWN_GPIO_Port, DOWN_Pin, GPIO_PIN_RESET);
     osDelay(500);
   }
   /* USER CODE END StartDefaultTask */

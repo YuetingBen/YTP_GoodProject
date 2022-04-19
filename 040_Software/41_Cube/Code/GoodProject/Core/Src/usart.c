@@ -399,7 +399,7 @@ void HAL_UART_Task(void * argument)
           linMasterMessage.dataArray[i] = linTransferData.dataArray[i];
         }
         linMasterModeCommandValue = linMasterMessage.message.masterModeCommand;
-        linMasterTargetPositionValue = linMasterMessage.message.masterTargetPos;
+        linMasterTargetPositionValue = linMasterMessage.message.masterTargetPos * 10;
         /*
         osMessageQueuePut(LIN_MasterTargetPositionHandle, (void *)&linMasterTargetPositionValue, 0, 0);
         osMessageQueuePut(LIN_MasterModeCommandHandle, (void *)&linMasterModeCommandValue, 0, 0);

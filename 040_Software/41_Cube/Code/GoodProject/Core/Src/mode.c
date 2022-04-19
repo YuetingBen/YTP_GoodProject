@@ -8,8 +8,8 @@
 #include "cmsis_os2.h"
 
 
-#define PARAMATER 16
-#define PARAMATERNUMBER 10
+#define PARAMATER 15
+#define PARAMATERNUMBER 30
 
 typedef enum
 {
@@ -100,13 +100,16 @@ void MODE_Task(void *argument)
     {
       case MODE_MOTOR_IDLE:
       {
-        if((positionValue + 50) < linMasterMessage.message.masterTargetPos)
+         HAL_GPIO_WritePin(UP_GPIO_Port, UP_Pin, GPIO_PIN_RESET);
+         HAL_GPIO_WritePin(DOWN_GPIO_Port, DOWN_Pin, GPIO_PIN_RESET);
+         
+        if((positionValue + 500) < linMasterMessage.message.masterTargetPos)
         {
           modeMotorStatus = MODE_MOTOR_FORWARD;
           pwmMotorOut.pwmMotorOutHigh = 100;
           pwmMotorOut.pwmMotorOutLow = 0;
         }
-        else if(positionValue > (linMasterMessage.message.masterTargetPos + 50))
+        else if(positionValue > (linMasterMessage.message.masterTargetPos + 500))
         {
           pwmMotorOut.pwmMotorOutHigh = 0;
           pwmMotorOut.pwmMotorOutLow = 100;
@@ -117,13 +120,22 @@ void MODE_Task(void *argument)
       }
       case MODE_MOTOR_FORWARD:
       {
-        positionValueDelta = (uint16_t)(positionValue - positionValueOld);
+        /* Get delta value between two tick 1ms */
+        if(positionValue > positionValueOld)
+        {
+          positionValueDelta = (uint16_t)(positionValue - positionValueOld);
+        }
+        else
+        {
+          positionValueDelta = (uint16_t)(positionValueOld - positionValue);
+        }
+        /* Push delta value to buffer, length PARAMATERNUMBER */
         for(i = 0; i < (PARAMATERNUMBER - 1); i++)
         {
           positionValueDeltaList[PARAMATERNUMBER - 1 - i] = positionValueDeltaList[PARAMATERNUMBER -2 - i];
         }
         positionValueDeltaList[0] = positionValueDelta;
-        
+        /* Calculate average value, speed = delta S/ delta t */
         positionValueDeltaAverage = 0;
         for(i = 0; i < PARAMATERNUMBER; i++)
         {
@@ -136,20 +148,31 @@ void MODE_Task(void *argument)
           modeMotorStatus = MODE_MOTOR_BREAK;
           pwmMotorOut.pwmMotorOutHigh = 100;
           pwmMotorOut.pwmMotorOutLow = 100;
+
+         HAL_GPIO_WritePin(UP_GPIO_Port, UP_Pin, GPIO_PIN_SET);
         }
         
         break;
       }
       case MODE_MOTOR_REVERSE:
       {
-        positionValueDelta = (uint16_t)(positionValueOld - positionValue);
-
+        /* Get delta value between two tick 1ms */
+        if(positionValue > positionValueOld)
+        {
+          positionValueDelta = (uint16_t)(positionValue - positionValueOld);
+        }
+        else
+        {
+          positionValueDelta = (uint16_t)(positionValueOld - positionValue);
+        }
+        /* Push delta value to buffer, length PARAMATERNUMBER */
         for(i = 0; i < (PARAMATERNUMBER - 1); i++)
         {
           positionValueDeltaList[(PARAMATERNUMBER - 1) - i] = positionValueDeltaList[(PARAMATERNUMBER - 2) - i];
         }
         positionValueDeltaList[0] = positionValueDelta;
-        
+
+        /* Calculate average value, speed = delta S/ delta t */
         positionValueDeltaAverage = 0;
         for(i = 0; i < PARAMATERNUMBER; i++)
         {
@@ -162,6 +185,8 @@ void MODE_Task(void *argument)
           modeMotorStatus = MODE_MOTOR_BREAK;
           pwmMotorOut.pwmMotorOutHigh = 100;
           pwmMotorOut.pwmMotorOutLow = 100;
+
+          HAL_GPIO_WritePin(DOWN_GPIO_Port, DOWN_Pin, GPIO_PIN_SET);
         }
         break;
       }

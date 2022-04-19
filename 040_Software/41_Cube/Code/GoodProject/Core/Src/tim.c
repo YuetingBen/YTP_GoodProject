@@ -301,6 +301,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
       if(dataList[29] == dataList[8] )
       {
         positionValue = dataList[2] * 256 + dataList[3] * 16 + dataList[4];
+        positionValue = positionValue * 10;
         timerValue = timerValue + 1;
         //positionValue = 0x123;
         osMessageQueuePut(SENT_CurrentPositionHandle, (void *)&positionValue, 0, 0);
