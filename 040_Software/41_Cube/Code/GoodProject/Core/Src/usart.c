@@ -108,6 +108,8 @@ const osEventFlagsAttr_t uartEvent_attributes = {
 };
 */
 EventGroupHandle_t uartEventHandle = NULL;
+EventGroupHandle_t linEventMessageReceiveHandle = NULL;
+
 
 extern osMessageQueueId_t SENT_CurrentPositionHandle;
 
@@ -115,6 +117,8 @@ extern osMessageQueueId_t LIN_MasterTargetPositionHandle;
 extern osMessageQueueId_t LIN_MasterModeCommandHandle;
 
 static uint8_t LIN_ComputeChecksum(LIN_DATA_S *linMessage);
+static void LIN_MessagesReceiveHandel(void);
+static void LIN_MessagesSentHandel(void);
 void HAL_UART_RxManage(void);
 /* USER CODE END 0 */
 
@@ -342,22 +346,50 @@ void HAL_UART_RxManage(void)
   }
 }
 
+
+static void LIN_MessagesReceiveHandel(void)
+{
+  static uint16_t linMasterTargetPositionValue;
+  static uint16_t linMasterModeCommandValue;
+  uint8_t i;
+
+  if(LIN_RX_MASTER_ID == linTransferData.id)
+  {
+    for(i = 0; i < linTransferData.length; i++)
+    {
+      linMasterMessage.dataArray[i] = linTransferData.dataArray[i];
+    }
+    linMasterModeCommandValue = linMasterMessage.message.masterModeCommand;
+    linMasterTargetPositionValue = linMasterMessage.message.masterTargetPos * 10;
+  }
+}
+
+
+static void LIN_MessagesSentHandel(void)
+{
+  static uint16_t linCurrentPositionValue;
+  static uint16_t linYtSentCurrentPositionValue;
+
+  static uint32_t linAngleValue;
+  
+  osStatus_t osStatus;
+  void *msg_ptr;
+  uint8_t *msg_prio;
+
+  osStatus = osMessageQueueGet(SENT_CurrentPositionHandle, (void *)&linYtSentCurrentPositionValue, msg_prio, 0); 
+
+  linAngleValue = linYtSentCurrentPositionValue * 3400 / 40950;
+  linYtSentMessage.dataArray[0] = (uint8_t)(linYtSentCurrentPositionValue);
+  linYtSentMessage.dataArray[1] = (uint8_t)(linYtSentCurrentPositionValue >> 8);
+
+  linYtSentMessage.dataArray[2] = (uint8_t)(linAngleValue);
+  linYtSentMessage.dataArray[3] = (uint8_t)(linAngleValue >> 8);
+}
+
 void HAL_UART_Task(void * argument)
 {
   uint8_t i;
   uint8_t tmpValue;
-
-  uint8_t command;
-  static uint16_t linCurrentPositionValue;
-
-  static uint16_t linMasterTargetPositionValue;
-  static uint16_t linMasterModeCommandValue;
-  
-  static uint16_t linYtSentCurrentPositionValue;
-
-  osStatus_t osStatus;
-  void *msg_ptr;
-  uint8_t *msg_prio;
 
   HAL_GPIO_WritePin(LIN_SLEEP_GPIO_Port, LIN_SLEEP_Pin, GPIO_PIN_SET);
 
@@ -394,27 +426,16 @@ void HAL_UART_Task(void * argument)
     {
       if(LIN_RX_MASTER_ID == linTransferData.id)
       {
-        for(i = 0; i < linTransferData.length; i++)
-        {
-          linMasterMessage.dataArray[i] = linTransferData.dataArray[i];
-        }
-        linMasterModeCommandValue = linMasterMessage.message.masterModeCommand;
-        linMasterTargetPositionValue = linMasterMessage.message.masterTargetPos * 10;
-        /*
-        osMessageQueuePut(LIN_MasterTargetPositionHandle, (void *)&linMasterTargetPositionValue, 0, 0);
-        osMessageQueuePut(LIN_MasterModeCommandHandle, (void *)&linMasterModeCommandValue, 0, 0);
-        osThreadYield();
-        */
+        LIN_MessagesReceiveHandel();
       }
     }
     else
     {
       /* Do nothing */
     }
-    osStatus = osMessageQueueGet(SENT_CurrentPositionHandle, (void *)&linYtSentCurrentPositionValue, msg_prio, 0); 
-    linYtSentMessage.dataArray[0] = (uint8_t)(linYtSentCurrentPositionValue);
-    linYtSentMessage.dataArray[1] = (uint8_t)(linYtSentCurrentPositionValue >> 8);
-    
+
+    /* Put message going to be sent to sentBuffer */
+    LIN_MessagesSentHandel();
   }
 }
 

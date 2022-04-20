@@ -14,6 +14,7 @@ Signals {
   YT_SENT_Position: 16, 0, Yueting, LIN_Master ;
   MASTER_ModeCommand: 8, 0, LIN_Master, Yueting ;
   MASTER_TargetPosition: 16, 0, LIN_Master, Yueting ;
+  YT_SENT_Angle: 16, 0, Yueting, LIN_Master ;
 }
 
 Diagnostic_signals {
@@ -40,6 +41,7 @@ Diagnostic_signals {
 Frames {
   YT_SENT: 3, Yueting, 8 {
     YT_SENT_Position, 0 ;
+    YT_SENT_Angle, 16 ;
   }
   MASTER: 4, LIN_Master, 8 {
     MASTER_ModeCommand, 0 ;
@@ -97,4 +99,12 @@ Schedule_tables {
 }
 
 
+Signal_encoding_types {
+  YTSENTAngleEncoding {
+    physical_value, 0, 3600, 0.1, 0 ;
+  }
+}
 
+Signal_representation {
+  YTSENTAngleEncoding: YT_SENT_Angle ;
+}

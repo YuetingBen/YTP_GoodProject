@@ -25,7 +25,7 @@ if not "%~1" == "" goto debugFile
 
 @echo on 
 
-"D:\Program Files (x86)\IAR Systems\Embedded Workbench 8.0\common\bin\cspybat" -f "F:\00_Workspace\00_YTP_GoodProject\040_Software\41_Cube\Code\GoodProject\EWARM\settings\GoodProject.GoodProject.general.xcl" --backend -f "F:\00_Workspace\00_YTP_GoodProject\040_Software\41_Cube\Code\GoodProject\EWARM\settings\GoodProject.GoodProject.driver.xcl" 
+"C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.0\common\bin\cspybat" -f "E:\050_Workspace\010_YTP_SENT\040_Software\41_Cube\Code\GoodProject\EWARM\settings\GoodProject.GoodProject.general.xcl" --backend -f "E:\050_Workspace\010_YTP_SENT\040_Software\41_Cube\Code\GoodProject\EWARM\settings\GoodProject.GoodProject.driver.xcl" 
 
 @echo off 
 goto end 
@@ -34,7 +34,7 @@ goto end
 
 @echo on 
 
-"D:\Program Files (x86)\IAR Systems\Embedded Workbench 8.0\common\bin\cspybat" -f "F:\00_Workspace\00_YTP_GoodProject\040_Software\41_Cube\Code\GoodProject\EWARM\settings\GoodProject.GoodProject.general.xcl" "--debug_file=%~1" --backend -f "F:\00_Workspace\00_YTP_GoodProject\040_Software\41_Cube\Code\GoodProject\EWARM\settings\GoodProject.GoodProject.driver.xcl" 
+"C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.0\common\bin\cspybat" -f "E:\050_Workspace\010_YTP_SENT\040_Software\41_Cube\Code\GoodProject\EWARM\settings\GoodProject.GoodProject.general.xcl" "--debug_file=%~1" --backend -f "E:\050_Workspace\010_YTP_SENT\040_Software\41_Cube\Code\GoodProject\EWARM\settings\GoodProject.GoodProject.driver.xcl" 
 
 @echo off 
 :end

@@ -47,6 +47,7 @@ typedef union
 typedef struct
 {
   uint16_t currentPos;
+  uint16_t angle;
 }LIN_YTSENT_MESSAGE_S;
 
 typedef union
