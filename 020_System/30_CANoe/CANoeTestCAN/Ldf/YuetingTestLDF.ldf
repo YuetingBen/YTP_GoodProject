@@ -12,6 +12,8 @@ Nodes {
 
 Signals {
   YT_SENT_Position: 16, 0, Yueting, LIN_Master ;
+  MASTER_ModeCommand: 8, 0, LIN_Master, Yueting ;
+  MASTER_TargetPosition: 16, 0, LIN_Master, Yueting ;
 }
 
 Diagnostic_signals {
@@ -38,6 +40,10 @@ Diagnostic_signals {
 Frames {
   YT_SENT: 3, Yueting, 8 {
     YT_SENT_Position, 0 ;
+  }
+  MASTER: 4, LIN_Master, 8 {
+    MASTER_ModeCommand, 0 ;
+    MASTER_TargetPosition, 8 ;
   }
 }
 
@@ -78,6 +84,7 @@ Node_attributes {
     N_Cr_timeout = 1000 ms ;
     configurable_frames {
       YT_SENT ;
+      MASTER ;
     }
   }
 }
@@ -85,6 +92,7 @@ Node_attributes {
 Schedule_tables {
  ScheduleTable {
     YT_SENT delay 10 ms ;
+    MASTER delay 10 ms ;
   }
 }
 
