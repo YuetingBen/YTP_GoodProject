@@ -1197,6 +1197,18 @@
             <name>User</name>
             <group>
                 <name>Core</name>
+                <group>
+                    <name>Com</name>
+                    <file>
+                        <name>$PROJ_DIR$\..\Core\Com\Src\ccl.c</name>
+                    </file>
+                    <file>
+                        <name>$PROJ_DIR$\..\Core\Com\Src\diag.c</name>
+                    </file>
+                    <file>
+                        <name>$PROJ_DIR$\..\Core\Com\Src\tp.c</name>
+                    </file>
+                </group>
                 <file>
                     <name>$PROJ_DIR$\..\Core\Src\can.c</name>
                 </file>

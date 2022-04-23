@@ -25,18 +25,20 @@
 #include "event_groups.h"
 #include "cmsis_os2.h"
 
-/*
+
 typedef struct
 {
   uint16_t pwmMotorOutHigh;
   uint16_t pwmMotorOutLow;
 }PWM_MOTOR_OUT_S;
-*/
-PWM_MOTOR_OUT_S pwmMotorOut;
 
-extern osMessageQueueId_t SENT_CurrentPositionHandle;
-extern osMessageQueueId_t MODE_MotorOutHandle;
-EventGroupHandle_t ModeEventHandle;
+/* Extern variants */
+extern osMessageQueueId_t SENT_CurrentPositionQueueHandle;
+extern osMessageQueueId_t MODE_MotorOutQueueHandle;
+extern osEventFlagsId_t MotorOutEventHandle;
+
+
+static PWM_MOTOR_OUT_S pwmMotorOut;
 static uint8_t dataList[30];
 
 uint16_t positionValue;
@@ -293,7 +295,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
     {
       index = 0;
     }
-    dataList[index] = (uint8_t)((counterDelta - 1)/3 + 1 - 12);
+    dataList[index] = (uint8_t)((counterDelta - 2)/3 + 1 - 12);
 
     if(index >= 8)
     {
@@ -303,8 +305,8 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         positionValue = dataList[2] * 256 + dataList[3] * 16 + dataList[4];
         positionValue = positionValue * 10;
         timerValue = timerValue + 1;
-        //positionValue = 0x123;
-        osMessageQueuePut(SENT_CurrentPositionHandle, (void *)&positionValue, 0, 0);
+
+        osMessageQueuePut(SENT_CurrentPositionQueueHandle, (uint32_t *)&positionValue, 0, 0);
         osThreadYield();
       }
     }
@@ -325,74 +327,31 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 void HAL_TIM_Task(void * argument)
 {
   osStatus_t osStatus;
-  void *msg_ptr;
-  uint8_t *msg_prio;
+
+  static uint16_t PwmmotorOutMessageQueue[2];
 
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-
   HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
 
-    ModeEventHandle = xEventGroupCreate();
   /* Infinite loop */
   for(;;)
   {
-#if 0
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 300);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
-    osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 400);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
-    osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 600);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
-    osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 800);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
-    osDelay(5000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 400);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
-    osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
-    osDelay(1000);
-
-
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 300);
-    osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 400);
-    osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 600);
-    osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 800);
-    osDelay(5000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 400);
-    osDelay(1000);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
-    osDelay(1000);
-#endif
-    //osStatus = osMessageQueueGet(MODE_MotorOutHandle, (void *)&pwmMotorOut, msg_prio, 0);
-    xEventGroupWaitBits(ModeEventHandle,
+    
+    xEventGroupWaitBits(MotorOutEventHandle,
                                 (0x01) ,
                                 pdTRUE,
                                 pdTRUE,
                                 osWaitForever);
                                 
+    osMessageQueueGet(MODE_MotorOutQueueHandle, (uint32_t *)&pwmMotorOut, NULL, 0);   
+
+
+    //pwmMotorOut.pwmMotorOutHigh = PwmmotorOutMessageQueue[0];
+    //pwmMotorOut.pwmMotorOutLow = PwmmotorOutMessageQueue[1]; 
+    
     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, pwmMotorOut.pwmMotorOutHigh);
     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, pwmMotorOut.pwmMotorOutLow);
-
-
-    //__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 50);
-    //__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
-    //__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
-    //__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
-    //osDelay(2000);
   }
 }
 

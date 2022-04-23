@@ -92,54 +92,54 @@ const osThreadAttr_t MODE_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
-/* Definitions for SENT_CurrentPosition */
-osMessageQueueId_t SENT_CurrentPositionHandle;
-uint8_t SENT_CurrentPositionBuffer[ 1 * sizeof( uint16_t ) ];
+/* Definitions for SENT_CurrentPositionQueue */
+osMessageQueueId_t SENT_CurrentPositionQueueHandle;
+uint8_t SENT_CurrentPositionBuffer[ 1 * sizeof( uint32_t ) ];
 osStaticMessageQDef_t SENT_CurrentPositionControlBlock;
-const osMessageQueueAttr_t SENT_CurrentPosition_attributes = {
-  .name = "SENT_CurrentPosition",
+const osMessageQueueAttr_t SENT_CurrentPositionQueue_attributes = {
+  .name = "SENT_CurrentPositionQueue",
   .cb_mem = &SENT_CurrentPositionControlBlock,
   .cb_size = sizeof(SENT_CurrentPositionControlBlock),
   .mq_mem = &SENT_CurrentPositionBuffer,
   .mq_size = sizeof(SENT_CurrentPositionBuffer)
 };
-/* Definitions for LIN_MasterTargetPosition */
-osMessageQueueId_t LIN_MasterTargetPositionHandle;
-uint8_t LIN_MasterTargetPositionBuffer[ 1 * sizeof( uint16_t ) ];
+/* Definitions for LIN_MasterTargetPositionQueue */
+osMessageQueueId_t LIN_MasterTargetPositionQueueHandle;
+uint8_t LIN_MasterTargetPositionBuffer[ 1 * sizeof( uint32_t ) ];
 osStaticMessageQDef_t LIN_MasterTargetPositionControlBlock;
-const osMessageQueueAttr_t LIN_MasterTargetPosition_attributes = {
-  .name = "LIN_MasterTargetPosition",
+const osMessageQueueAttr_t LIN_MasterTargetPositionQueue_attributes = {
+  .name = "LIN_MasterTargetPositionQueue",
   .cb_mem = &LIN_MasterTargetPositionControlBlock,
   .cb_size = sizeof(LIN_MasterTargetPositionControlBlock),
   .mq_mem = &LIN_MasterTargetPositionBuffer,
   .mq_size = sizeof(LIN_MasterTargetPositionBuffer)
 };
-/* Definitions for LIN_MasterModeCommand */
-osMessageQueueId_t LIN_MasterModeCommandHandle;
-uint8_t LIN_MasterModeCommandBuffer[ 1 * sizeof( uint8_t ) ];
+/* Definitions for LIN_MasterModeCommandQueue */
+osMessageQueueId_t LIN_MasterModeCommandQueueHandle;
+uint8_t LIN_MasterModeCommandBuffer[ 1 * sizeof( uint32_t ) ];
 osStaticMessageQDef_t LIN_MasterModeCommandControlBlock;
-const osMessageQueueAttr_t LIN_MasterModeCommand_attributes = {
-  .name = "LIN_MasterModeCommand",
+const osMessageQueueAttr_t LIN_MasterModeCommandQueue_attributes = {
+  .name = "LIN_MasterModeCommandQueue",
   .cb_mem = &LIN_MasterModeCommandControlBlock,
   .cb_size = sizeof(LIN_MasterModeCommandControlBlock),
   .mq_mem = &LIN_MasterModeCommandBuffer,
   .mq_size = sizeof(LIN_MasterModeCommandBuffer)
 };
-/* Definitions for MODE_MotorOut */
-osMessageQueueId_t MODE_MotorOutHandle;
-uint8_t MODE_MotorOutBuffer[ 2 * sizeof( uint16_t ) ];
+/* Definitions for MODE_MotorOutQueue */
+osMessageQueueId_t MODE_MotorOutQueueHandle;
+uint8_t MODE_MotorOutBuffer[ 1 * sizeof( uint32_t ) ];
 osStaticMessageQDef_t MODE_MotorOutControlBlock;
-const osMessageQueueAttr_t MODE_MotorOut_attributes = {
-  .name = "MODE_MotorOut",
+const osMessageQueueAttr_t MODE_MotorOutQueue_attributes = {
+  .name = "MODE_MotorOutQueue",
   .cb_mem = &MODE_MotorOutControlBlock,
   .cb_size = sizeof(MODE_MotorOutControlBlock),
   .mq_mem = &MODE_MotorOutBuffer,
   .mq_size = sizeof(MODE_MotorOutBuffer)
 };
-/* Definitions for Event */
-osEventFlagsId_t EventHandle;
-const osEventFlagsAttr_t Event_attributes = {
-  .name = "Event"
+/* Definitions for MotorOutEvent */
+osEventFlagsId_t MotorOutEventHandle;
+const osEventFlagsAttr_t MotorOutEvent_attributes = {
+  .name = "MotorOutEvent"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -178,17 +178,17 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
-  /* creation of SENT_CurrentPosition */
-  SENT_CurrentPositionHandle = osMessageQueueNew (1, sizeof(uint16_t), &SENT_CurrentPosition_attributes);
+  /* creation of SENT_CurrentPositionQueue */
+  SENT_CurrentPositionQueueHandle = osMessageQueueNew (1, sizeof(uint32_t), &SENT_CurrentPositionQueue_attributes);
 
-  /* creation of LIN_MasterTargetPosition */
-  LIN_MasterTargetPositionHandle = osMessageQueueNew (1, sizeof(uint16_t), &LIN_MasterTargetPosition_attributes);
+  /* creation of LIN_MasterTargetPositionQueue */
+  LIN_MasterTargetPositionQueueHandle = osMessageQueueNew (1, sizeof(uint32_t), &LIN_MasterTargetPositionQueue_attributes);
 
-  /* creation of LIN_MasterModeCommand */
-  LIN_MasterModeCommandHandle = osMessageQueueNew (1, sizeof(uint8_t), &LIN_MasterModeCommand_attributes);
+  /* creation of LIN_MasterModeCommandQueue */
+  LIN_MasterModeCommandQueueHandle = osMessageQueueNew (1, sizeof(uint32_t), &LIN_MasterModeCommandQueue_attributes);
 
-  /* creation of MODE_MotorOut */
-  MODE_MotorOutHandle = osMessageQueueNew (2, sizeof(uint16_t), &MODE_MotorOut_attributes);
+  /* creation of MODE_MotorOutQueue */
+  MODE_MotorOutQueueHandle = osMessageQueueNew (1, sizeof(uint32_t), &MODE_MotorOutQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -215,8 +215,8 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_THREADS */
 
   /* Create the event(s) */
-  /* creation of Event */
-  EventHandle = osEventFlagsNew(&Event_attributes);
+  /* creation of MotorOutEvent */
+  MotorOutEventHandle = osEventFlagsNew(&MotorOutEvent_attributes);
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */

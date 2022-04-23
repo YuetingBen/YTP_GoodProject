@@ -91,15 +91,15 @@ typedef struct
 
 
 static LIN_DATA_S linTransferData;
-LIN_STATE_E linState = LIN_STATE_IDLE;
+static LIN_STATE_E linState = LIN_STATE_IDLE;
 
 
-EventBits_t  eventTrigger;
+
 
 //static LIN_MASTER_MESSAGE_U linMasterMessage;
 //static LIN_YTSENT_MESSAGE_U linYtSentMessage;
-LIN_MASTER_MESSAGE_U linMasterMessage;
-LIN_YTSENT_MESSAGE_U linYtSentMessage;
+static LIN_MASTER_MESSAGE_U linMasterMessage;
+static LIN_YTSENT_MESSAGE_U linYtSentMessage;
 
 /*
 osEventFlagsId_t uartEventHandle;
@@ -107,14 +107,13 @@ const osEventFlagsAttr_t uartEvent_attributes = {
   .name = "uartEvent"
 };
 */
-EventGroupHandle_t uartEventHandle = NULL;
-EventGroupHandle_t linEventMessageReceiveHandle = NULL;
+static EventGroupHandle_t uartEventHandle = NULL;
 
 
-extern osMessageQueueId_t SENT_CurrentPositionHandle;
+extern osMessageQueueId_t SENT_CurrentPositionQueueHandle;
+extern osMessageQueueId_t LIN_MasterTargetPositionQueueHandle;
+extern osMessageQueueId_t LIN_MasterModeCommandQueueHandle;
 
-extern osMessageQueueId_t LIN_MasterTargetPositionHandle;
-extern osMessageQueueId_t LIN_MasterModeCommandHandle;
 
 static uint8_t LIN_ComputeChecksum(LIN_DATA_S *linMessage);
 static void LIN_MessagesReceiveHandel(void);
@@ -361,6 +360,9 @@ static void LIN_MessagesReceiveHandel(void)
     }
     linMasterModeCommandValue = linMasterMessage.message.masterModeCommand;
     linMasterTargetPositionValue = linMasterMessage.message.masterTargetPos * 10;
+
+    osMessageQueuePut(LIN_MasterModeCommandQueueHandle, (void *)&linMasterModeCommandValue, 0, 0);
+    osMessageQueuePut(LIN_MasterTargetPositionQueueHandle, (void *)&linMasterTargetPositionValue, 0, 0);
   }
 }
 
@@ -376,7 +378,7 @@ static void LIN_MessagesSentHandel(void)
   void *msg_ptr;
   uint8_t *msg_prio;
 
-  osStatus = osMessageQueueGet(SENT_CurrentPositionHandle, (void *)&linYtSentCurrentPositionValue, msg_prio, 0); 
+  osStatus = osMessageQueueGet(SENT_CurrentPositionQueueHandle, (void *)&linYtSentCurrentPositionValue, msg_prio, 0); 
 
   linAngleValue = linYtSentCurrentPositionValue * 3400 / 40950;
   linYtSentMessage.dataArray[0] = (uint8_t)(linYtSentCurrentPositionValue);
@@ -390,6 +392,7 @@ void HAL_UART_Task(void * argument)
 {
   uint8_t i;
   uint8_t tmpValue;
+  EventBits_t  eventTrigger;
 
   HAL_GPIO_WritePin(LIN_SLEEP_GPIO_Port, LIN_SLEEP_Pin, GPIO_PIN_SET);
 
