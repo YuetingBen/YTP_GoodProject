@@ -94,7 +94,7 @@ const osThreadAttr_t MODE_attributes = {
 };
 /* Definitions for SENT_CurrentPositionQueue */
 osMessageQueueId_t SENT_CurrentPositionQueueHandle;
-uint8_t SENT_CurrentPositionBuffer[ 1 * sizeof( uint32_t ) ];
+uint8_t SENT_CurrentPositionBuffer[ 1 * sizeof( uint16_t ) ];
 osStaticMessageQDef_t SENT_CurrentPositionControlBlock;
 const osMessageQueueAttr_t SENT_CurrentPositionQueue_attributes = {
   .name = "SENT_CurrentPositionQueue",
@@ -105,7 +105,7 @@ const osMessageQueueAttr_t SENT_CurrentPositionQueue_attributes = {
 };
 /* Definitions for LIN_MasterTargetPositionQueue */
 osMessageQueueId_t LIN_MasterTargetPositionQueueHandle;
-uint8_t LIN_MasterTargetPositionBuffer[ 1 * sizeof( uint32_t ) ];
+uint8_t LIN_MasterTargetPositionBuffer[ 1 * sizeof( uint16_t ) ];
 osStaticMessageQDef_t LIN_MasterTargetPositionControlBlock;
 const osMessageQueueAttr_t LIN_MasterTargetPositionQueue_attributes = {
   .name = "LIN_MasterTargetPositionQueue",
@@ -116,7 +116,7 @@ const osMessageQueueAttr_t LIN_MasterTargetPositionQueue_attributes = {
 };
 /* Definitions for LIN_MasterModeCommandQueue */
 osMessageQueueId_t LIN_MasterModeCommandQueueHandle;
-uint8_t LIN_MasterModeCommandBuffer[ 1 * sizeof( uint32_t ) ];
+uint8_t LIN_MasterModeCommandBuffer[ 1 * sizeof( uint8_t ) ];
 osStaticMessageQDef_t LIN_MasterModeCommandControlBlock;
 const osMessageQueueAttr_t LIN_MasterModeCommandQueue_attributes = {
   .name = "LIN_MasterModeCommandQueue",
@@ -179,13 +179,13 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the queue(s) */
   /* creation of SENT_CurrentPositionQueue */
-  SENT_CurrentPositionQueueHandle = osMessageQueueNew (1, sizeof(uint32_t), &SENT_CurrentPositionQueue_attributes);
+  SENT_CurrentPositionQueueHandle = osMessageQueueNew (1, sizeof(uint16_t), &SENT_CurrentPositionQueue_attributes);
 
   /* creation of LIN_MasterTargetPositionQueue */
-  LIN_MasterTargetPositionQueueHandle = osMessageQueueNew (1, sizeof(uint32_t), &LIN_MasterTargetPositionQueue_attributes);
+  LIN_MasterTargetPositionQueueHandle = osMessageQueueNew (1, sizeof(uint16_t), &LIN_MasterTargetPositionQueue_attributes);
 
   /* creation of LIN_MasterModeCommandQueue */
-  LIN_MasterModeCommandQueueHandle = osMessageQueueNew (1, sizeof(uint32_t), &LIN_MasterModeCommandQueue_attributes);
+  LIN_MasterModeCommandQueueHandle = osMessageQueueNew (1, sizeof(uint8_t), &LIN_MasterModeCommandQueue_attributes);
 
   /* creation of MODE_MotorOutQueue */
   MODE_MotorOutQueueHandle = osMessageQueueNew (1, sizeof(uint32_t), &MODE_MotorOutQueue_attributes);

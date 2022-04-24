@@ -39,11 +39,10 @@ extern osEventFlagsId_t MotorOutEventHandle;
 
 
 static PWM_MOTOR_OUT_S pwmMotorOut;
-static uint8_t dataList[30];
 
 uint16_t positionValue;
 uint16_t timerValue;
-static uint8_t index;
+
 /* USER CODE END 0 */
 
 TIM_HandleTypeDef htim1;
@@ -275,9 +274,13 @@ uint8_t crc4_cal(uint8_t *data, uint8_t len)
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
+  static uint8_t dataList[10];
+  static uint8_t index;
+  
   static uint32_t counter;
   static uint32_t counterOld;
   static uint32_t counterDelta;
+  uint8_t crcValue;
   
   /* Prevent unused argument(s) compilation warning */
   if(htim->Instance==TIM1)
@@ -299,14 +302,15 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 
     if(index >= 8)
     {
-      dataList[29] = crc4_cal(&dataList[2], 6);
-      if(dataList[29] == dataList[8] )
+      crcValue = crc4_cal(&dataList[2], 6);
+      if(crcValue == dataList[8] )
       {
         positionValue = dataList[2] * 256 + dataList[3] * 16 + dataList[4];
+
         positionValue = positionValue * 10;
         timerValue = timerValue + 1;
 
-        osMessageQueuePut(SENT_CurrentPositionQueueHandle, (uint32_t *)&positionValue, 0, 0);
+        osMessageQueuePut(SENT_CurrentPositionQueueHandle, (void *)&positionValue, 0, 0);
         osThreadYield();
       }
     }
@@ -314,11 +318,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
     index++;
   }
 
-
   counterOld = counter;
-  /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_TIM_IC_CaptureCallback could be implemented in the user file
-   */
 }
 
 
@@ -337,7 +337,6 @@ void HAL_TIM_Task(void * argument)
   /* Infinite loop */
   for(;;)
   {
-    
     xEventGroupWaitBits(MotorOutEventHandle,
                                 (0x01) ,
                                 pdTRUE,
@@ -345,10 +344,6 @@ void HAL_TIM_Task(void * argument)
                                 osWaitForever);
                                 
     osMessageQueueGet(MODE_MotorOutQueueHandle, (uint32_t *)&pwmMotorOut, NULL, 0);   
-
-
-    //pwmMotorOut.pwmMotorOutHigh = PwmmotorOutMessageQueue[0];
-    //pwmMotorOut.pwmMotorOutLow = PwmmotorOutMessageQueue[1]; 
     
     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, pwmMotorOut.pwmMotorOutHigh);
     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, pwmMotorOut.pwmMotorOutLow);

@@ -12,8 +12,11 @@
 #define PARAMATERNUMBER 30u
 #define MOTOR_BRAKE_TIME 500u  /* 500ms  */
 
+
+#define MOTOR_SMALLEST_STEP   50u  /* Angle 0.41 degree, 10 * 340 / 40950*/
 #define MOTOR_340_STEP    40950u  /* Angle 360 degree, 360 * 40950 / 340 */
 #define MOTOR_360_STEP    43359u  /* Angle 360 degree, 360 * 40950 / 340 */
+#define MOTOR_ONE_CYCLE_SMALLEST_STEP    43359u  /* Angle 360 degree, 360 * 40950 / 340 */
 #define MOTOR_BOUNDARY_VALUE_STEP     100u
 
 typedef enum
@@ -55,7 +58,6 @@ typedef struct
   uint16_t modeMotorOutLow;
 }MODE_MOTOR_OUT_S;
 
-
 typedef enum
 {
   MODE_MODE_CHANGE_STEP_IDLE,
@@ -64,6 +66,13 @@ typedef enum
   MODE_MODE_CHANGE_STEP_TO_SECOND_POSITION,
   MODE_MODE_CHANGE_STEP_ARIVE_SECOND_POSITION
 }MODE_MODE_CHANGE_STEP_S;
+
+typedef enum
+{
+  MODE_MODE_POSITION_STEP_IDLE,
+  MODE_MODE_POSITION_STEP_TO_TARGET_POSITION,
+  MODE_MODE_POSITION_ARIVE_TARGET_POSITION
+}MODE_MODE_POSITION_STEP_S;
 
 typedef enum
 {
@@ -87,8 +96,6 @@ extern osMessageQueueId_t LIN_MasterTargetPositionQueueHandle;
 extern osMessageQueueId_t LIN_MasterModeCommandQueueHandle;
 extern osMessageQueueId_t MODE_MotorOutQueueHandle;
 
-
-
 extern uint16_t positionValue;
 
 
@@ -99,6 +106,8 @@ static MODE_COMMAND_E currentMode;
 static uint8_t runCycle;
 static uint32_t modeCurrentPos;
 static uint32_t modeTargetPos;
+
+static uint16_t masterTargetPos;
 
 static MODE_CONTROL_MODE_E controlMode;
 
@@ -134,8 +143,37 @@ void MODE_Init(void)
   modeMotorOut.modeMotorOutLow = 0;
 }
 
+static void MODE_ModePositionChange(void)
+{
+  static MODE_MODE_CHANGE_STEP_S posRunStep = MODE_MODE_POSITION_STEP_IDLE;
 
-static void MODE_ModeChange(void)
+  switch(posRunStep)
+  {
+    case MODE_MODE_POSITION_STEP_IDLE:
+    {
+      posRunStep = MODE_MODE_POSITION_STEP_TO_TARGET_POSITION;
+      break;
+    }
+    case MODE_MODE_POSITION_STEP_TO_TARGET_POSITION:
+    {
+      posRunStep = MODE_MODE_POSITION_ARIVE_TARGET_POSITION;
+      modeTargetPos = masterTargetPos * 10;
+      break;
+    }
+    case MODE_MODE_POSITION_ARIVE_TARGET_POSITION:
+    {
+      if(MODE_MOTOR_STATUS_IDLE == modeMotorStatus)
+      {
+        posRunStep = MODE_MODE_POSITION_STEP_IDLE;
+        controlMode = MODE_CONTROL_MODE_NONE;
+      }
+      break;
+    }
+  }
+}
+
+
+static void MODE_ModeCommandChange(void)
 {
   static MODE_MODE_CHANGE_STEP_S modeRunStep = MODE_MODE_CHANGE_STEP_IDLE;
   static uint16_t firstPos;
@@ -158,6 +196,10 @@ static void MODE_ModeChange(void)
     case MODE_MODE_CHANGE_STEP_TO_FIRST_POSITION:
     {
       modeTargetPos = firstPos + MOTOR_360_STEP;
+      if(MOTOR_ONE_CYCLE_SMALLEST_STEP > (modeTargetPos - modeCurrentPos))
+      {
+        modeTargetPos = modeTargetPos + MOTOR_360_STEP;
+      }
       modeMotorStatus = MODE_MOTOR_STATUS_START;
       modeRunStep = MODE_MODE_CHANGE_STEP_ARIVE_FIRST_POSITION;
       break;
@@ -215,7 +257,7 @@ static void MODE_MotorAction(void)
        modeMotorStatus = MODE_MOTOR_STATUS_IDLE;
        brakeTimer = 0;
        
-      if((modeCurrentPos + 500) < modeTargetPos)
+      if((modeCurrentPos + MOTOR_SMALLEST_STEP) < modeTargetPos)
       {
         modeMotorOut.modeMotorOutHigh = 0;
         modeMotorOut.modeMotorOutLow= 100;
@@ -223,7 +265,7 @@ static void MODE_MotorAction(void)
         modeMotorRunStep = MODE_MOTOR_RUN_STEP_FORWARD;
         modeMotorStatus = MODE_MOTOR_STATUS_RUNNING;
       }
-      else if(modeCurrentPos > (modeTargetPos + 500))
+      else if(modeCurrentPos > (modeTargetPos + MOTOR_SMALLEST_STEP))
       {
         modeMotorOut.modeMotorOutHigh = 100;
         modeMotorOut.modeMotorOutLow= 0;
@@ -347,35 +389,66 @@ static void MODE_MotorAction(void)
 void MODE_ControlModeHandel(void)
 {
   static uint8_t masterModeCommand;
-  static uint16_t masterTargetPos;
 
   static uint8_t masterModeCommandOld;
   static uint16_t masterTargetPosOld;
 
   uint8_t *msg_prio;
 
-
-  osMessageQueueGet(LIN_MasterModeCommandQueueHandle, (uint32_t *)&masterModeCommand, msg_prio, 0);
-  osMessageQueueGet(LIN_MasterTargetPositionQueueHandle, (uint32_t *)&masterTargetPos, msg_prio, 0);
-  
+  osMessageQueueGet(LIN_MasterModeCommandQueueHandle, (void *)&masterModeCommand, msg_prio, 0);
+  osMessageQueueGet(LIN_MasterTargetPositionQueueHandle, (void *)&masterTargetPos, msg_prio, 0);
 
   if(MODE_CONTROL_MODE_NONE == controlMode)
   {
     if(masterModeCommandOld != masterModeCommand)
     {
-      modeCommand = masterModeCommand;
+      modeCommand = (MODE_COMMAND_E)masterModeCommand;
       controlMode = MODE_CONTROL_MODE_LIN_COMMAND;
     }
     else if(masterTargetPosOld != masterTargetPos)
     {
       modeCommand = MODE_INVALID;
-      modeTargetPos = masterTargetPos * 10;
       controlMode = MODE_CONTROL_MODE_LIN_POS;
     }
     else
     {
       modeCommand = MODE_INVALID;
     }
+  }
+
+  switch(controlMode)
+  {
+    case MODE_CONTROL_MODE_NONE:
+    {
+      break;
+    }
+    case MODE_CONTROL_MODE_LIN_COMMAND:
+    {
+      MODE_ModeCommandChange();
+      break;
+    }
+    case MODE_CONTROL_MODE_LIN_POS:
+    {
+      MODE_ModePositionChange(); 
+      break;
+    }
+    case MODE_CONTROL_MODE_KEY_COMMAND:
+    {
+      break;
+    }
+    case MODE_CONTROL_MODE_KEY_RUN:
+    {
+      break;
+    }
+    default:
+    {
+      break;
+    }
+  }
+
+  if(MODE_CONTROL_MODE_NONE != controlMode)
+  {
+    MODE_MotorAction();
   }
   
   masterModeCommandOld = masterModeCommand;
@@ -395,7 +468,8 @@ void MODE_Task(void *argument)
 
   for(;;)
   {
-    osMessageQueueGet(SENT_CurrentPositionQueueHandle, (uint32_t *)&positionValueTemp, msg_prio, 0);
+    //osMessageQueueGet(SENT_CurrentPositionQueueHandle, (uint16_t *)&positionValueTemp, msg_prio, 0);
+    positionValueTemp = positionValue;
     if((positionValueOld >= (MOTOR_340_STEP - MOTOR_BOUNDARY_VALUE_STEP)) && (positionValueTemp <= MOTOR_BOUNDARY_VALUE_STEP))
     {
       runCycle = runCycle + 1;
@@ -408,14 +482,8 @@ void MODE_Task(void *argument)
       }
     }
     modeCurrentPos = runCycle * MOTOR_360_STEP + positionValueTemp;
-    //modeTargetPos = linMasterMessage.message.masterTargetPos;
+    
     MODE_ControlModeHandel();
-
-    if(MODE_CONTROL_MODE_NONE != controlMode)
-    {
-      MODE_ModeChange();
-      MODE_MotorAction();
-    }
 
     positionValueOld = positionValueTemp;
     

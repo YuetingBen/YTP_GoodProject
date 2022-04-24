@@ -92,24 +92,12 @@ typedef struct
 
 static LIN_DATA_S linTransferData;
 static LIN_STATE_E linState = LIN_STATE_IDLE;
-
-
-
-
-//static LIN_MASTER_MESSAGE_U linMasterMessage;
-//static LIN_YTSENT_MESSAGE_U linYtSentMessage;
 static LIN_MASTER_MESSAGE_U linMasterMessage;
 static LIN_YTSENT_MESSAGE_U linYtSentMessage;
 
-/*
-osEventFlagsId_t uartEventHandle;
-const osEventFlagsAttr_t uartEvent_attributes = {
-  .name = "uartEvent"
-};
-*/
 static EventGroupHandle_t uartEventHandle = NULL;
 
-
+extern uint16_t positionValue;
 extern osMessageQueueId_t SENT_CurrentPositionQueueHandle;
 extern osMessageQueueId_t LIN_MasterTargetPositionQueueHandle;
 extern osMessageQueueId_t LIN_MasterModeCommandQueueHandle;
@@ -349,7 +337,7 @@ void HAL_UART_RxManage(void)
 static void LIN_MessagesReceiveHandel(void)
 {
   static uint16_t linMasterTargetPositionValue;
-  static uint16_t linMasterModeCommandValue;
+  static uint8_t linMasterModeCommandValue;
   uint8_t i;
 
   if(LIN_RX_MASTER_ID == linTransferData.id)
@@ -359,7 +347,7 @@ static void LIN_MessagesReceiveHandel(void)
       linMasterMessage.dataArray[i] = linTransferData.dataArray[i];
     }
     linMasterModeCommandValue = linMasterMessage.message.masterModeCommand;
-    linMasterTargetPositionValue = linMasterMessage.message.masterTargetPos * 10;
+    linMasterTargetPositionValue = linMasterMessage.message.masterTargetPos;
 
     osMessageQueuePut(LIN_MasterModeCommandQueueHandle, (void *)&linMasterModeCommandValue, 0, 0);
     osMessageQueuePut(LIN_MasterTargetPositionQueueHandle, (void *)&linMasterTargetPositionValue, 0, 0);
@@ -378,8 +366,8 @@ static void LIN_MessagesSentHandel(void)
   void *msg_ptr;
   uint8_t *msg_prio;
 
-  osStatus = osMessageQueueGet(SENT_CurrentPositionQueueHandle, (void *)&linYtSentCurrentPositionValue, msg_prio, 0); 
-
+  osMessageQueueGet(SENT_CurrentPositionQueueHandle, (void *)&linYtSentCurrentPositionValue, msg_prio, 0); 
+  //linYtSentCurrentPositionValue = (uint16_t)positionValue;
   linAngleValue = linYtSentCurrentPositionValue * 3400 / 40950;
   linYtSentMessage.dataArray[0] = (uint8_t)(linYtSentCurrentPositionValue);
   linYtSentMessage.dataArray[1] = (uint8_t)(linYtSentCurrentPositionValue >> 8);

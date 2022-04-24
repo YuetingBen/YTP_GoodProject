@@ -18,7 +18,7 @@
         <LeaveTargetRunning>_ 0</LeaveTargetRunning>
     </StLinkDriver>
     <DebugChecksum>
-        <Checksum>2712910529</Checksum>
+        <Checksum>4050422953</Checksum>
     </DebugChecksum>
     <Exceptions>
         <StopOnUncaught>_ 0</StopOnUncaught>
@@ -63,9 +63,10 @@
         <mode>0</mode>
     </DisassembleMode>
     <Breakpoints2>
-        <Bp0>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\mode.c}.309.7" 0 0 1 "" 0 "" 0</Bp0>
-        <Bp1>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\mode.c}.269.7" 0 0 1 "" 0 "" 0</Bp1>
-        <Count>2</Count>
+        <Bp0>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\usart.c}.369.3" 0 0 1 "" 0 "" 0</Bp0>
+        <Bp1>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\mode.c}.405.7" 0 0 1 "" 0 "" 0</Bp1>
+        <Bp2>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\tim.c}.310.9" 0 0 1 "" 0 "" 0</Bp2>
+        <Count>3</Count>
     </Breakpoints2>
     <LogFile>
         <LoggingEnabled>_ 0</LoggingEnabled>
@@ -97,4 +98,4 @@
 [JLinkDriver]
 TraceBufferSize=0x00010000
 TraceStallIfFIFOFull=0x00000000
-TracePortSize=0x00000004
+TracePortSize=0x00000000
