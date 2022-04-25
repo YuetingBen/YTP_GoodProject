@@ -92,6 +92,13 @@ const osThreadAttr_t MODE_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for EEPROM */
+osThreadId_t EEPROMHandle;
+const osThreadAttr_t EEPROM_attributes = {
+  .name = "EEPROM",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 /* Definitions for SENT_CurrentPositionQueue */
 osMessageQueueId_t SENT_CurrentPositionQueueHandle;
 uint8_t SENT_CurrentPositionBuffer[ 1 * sizeof( uint16_t ) ];
@@ -152,6 +159,7 @@ extern void HAL_CAN_Task(void *argument);
 extern void HAL_UART_Task(void *argument);
 extern void HAL_TIM_Task(void *argument);
 extern void MODE_Task(void *argument);
+extern void EEPROM_Task(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -209,6 +217,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of MODE */
   MODEHandle = osThreadNew(MODE_Task, NULL, &MODE_attributes);
+
+  /* creation of EEPROM */
+  EEPROMHandle = osThreadNew(EEPROM_Task, NULL, &EEPROM_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   
