@@ -18,7 +18,7 @@
         <LeaveTargetRunning>_ 0</LeaveTargetRunning>
     </StLinkDriver>
     <DebugChecksum>
-        <Checksum>242061661</Checksum>
+        <Checksum>1866197093</Checksum>
     </DebugChecksum>
     <Exceptions>
         <StopOnUncaught>_ 0</StopOnUncaught>
@@ -39,26 +39,40 @@
         <LeaveTargetRunning>_ 0</LeaveTargetRunning>
     </JLinkDriver>
     <struct_types>
-        <Fmt0>LIN_DATA_S-dataBufferIndex	3	0</Fmt0>
-        <Fmt1>PWM_MOTOR_OUT_S-pwmMotorOutHigh	3	0</Fmt1>
+        <Fmt0>EE_DATA_TYPE_S-testDataU16	4	0</Fmt0>
+        <Fmt1>EE_DATA_TYPE_S-testDataU8	4	0</Fmt1>
+        <Fmt2>EE_POSITION_S-firstPosition	4	0</Fmt2>
+        <Fmt3>EE_POSITION_S-secondPosition	4	0</Fmt3>
+        <Fmt4>LIN_DATA_S-dataBufferIndex	3	0</Fmt4>
+        <Fmt5>PWM_MOTOR_OUT_S-pwmMotorOutHigh	3	0</Fmt5>
     </struct_types>
     <array_types>
         <Fmt0>uint8_t[30]	3	0</Fmt0>
         <Fmt1>uint8_t[4]	4	0</Fmt1>
+        <Fmt2>uint8_t[5]	4	0</Fmt2>
     </array_types>
     <watch_formats>
-        <Fmt0>{W}1:eventTrigger	4	0</Fmt0>
-        <Fmt1>{W}1:linMasterTargetPositionValue	3	0</Fmt1>
-        <Fmt2>{W}1:modeCommand	3	0</Fmt2>
-        <Fmt3>{W}1:modeCurrentPos	3	0</Fmt3>
-        <Fmt4>{W}1:modeTargetPos	3	0</Fmt4>
-        <Fmt5>{W}1:osStatus	4	0</Fmt5>
-        <Fmt6>{W}1:positionValueDelta	3	0</Fmt6>
+        <Fmt0>{W}1:DevAddress	4	0</Fmt0>
+        <Fmt1>{W}1:MemAddress	4	0</Fmt1>
+        <Fmt2>{W}1:eventTrigger	4	0</Fmt2>
+        <Fmt3>{W}1:linMasterTargetPositionValue	3	0</Fmt3>
+        <Fmt4>{W}1:modeCommand	3	0</Fmt4>
+        <Fmt5>{W}1:modeCurrentPos	3	0</Fmt5>
+        <Fmt6>{W}1:modeTargetPos	3	0</Fmt6>
+        <Fmt7>{W}1:osStatus	4	0</Fmt7>
+        <Fmt8>{W}1:positionValueDelta	3	0</Fmt8>
     </watch_formats>
     <Trace1>
         <Enabled>0</Enabled>
         <ShowSource>1</ShowSource>
     </Trace1>
+    <DisassembleMode>
+        <mode>0</mode>
+    </DisassembleMode>
+    <Breakpoints2>
+        <Bp0>_ 1 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\i2c.c}.319.5" 0 0 1 "" 0 "" 0</Bp0>
+        <Count>1</Count>
+    </Breakpoints2>
     <LogFile>
         <LoggingEnabled>_ 0</LoggingEnabled>
         <LogFile>_ ""</LogFile>
@@ -68,6 +82,10 @@
         <LoggingEnabled>_ 0</LoggingEnabled>
         <LogFile>_ ""</LogFile>
     </TermIOLog>
+    <Aliases>
+        <Count>0</Count>
+        <SuppressDialog>0</SuppressDialog>
+    </Aliases>
     <DriverProfiling>
         <Enabled>0</Enabled>
         <Mode>1</Mode>
@@ -81,16 +99,8 @@
     <CallStackStripe>
         <ShowTiming>1</ShowTiming>
     </CallStackStripe>
-    <DisassembleMode>
-        <mode>0</mode>
-    </DisassembleMode>
-    <Breakpoints2>
-        <Bp0>_ 1 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\i2c.c}.118.1" 0 0 1 "" 0 "" 0</Bp0>
-        <Bp1>_ 1 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\i2c.c}.122.2" 0 0 1 "" 0 "" 0</Bp1>
-        <Count>2</Count>
-    </Breakpoints2>
-    <Aliases>
-        <Count>0</Count>
-        <SuppressDialog>0</SuppressDialog>
-    </Aliases>
 </settings>
+[JLinkDriver]
+TraceBufferSize=0x00010000
+TraceStallIfFIFOFull=0x00000000
+TracePortSize=0x00000000
