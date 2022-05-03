@@ -26,10 +26,15 @@
 #include "event_groups.h"
 #include "cmsis_os2.h"
 
+#include "i2c.h"
+
 #define LIN_BREAK_VALUE      0x00u
 #define LIN_SYNC_VALUE      0x55u
 #define LIN_RX_MASTER_ID      0x04u
 #define LIN_TX_YTSENT_ID      0x03u
+
+#define LIN_RX_MASTER_CALIBRARION_ID      0x21u
+#define LIN_TX_YT_CALIBRARION_ID              0x22u
 
 #define LIN_EVENT_SENT         1 << 0
 #define LIN_EVENT_RECEIVE    1 << 1
@@ -94,6 +99,8 @@ static LIN_DATA_S linTransferData;
 static LIN_STATE_E linState = LIN_STATE_IDLE;
 static LIN_MASTER_MESSAGE_U linMasterMessage;
 static LIN_YTSENT_MESSAGE_U linYtSentMessage;
+static LIN_YTCAL_MESSAGE_U linYtCalMessage;
+static LIN_MASTERCAL_MESSAGE_U linMasterCalMessage;
 
 static EventGroupHandle_t uartEventHandle = NULL;
 
@@ -104,8 +111,10 @@ extern osMessageQueueId_t LIN_MasterModeCommandQueueHandle;
 
 
 static uint8_t LIN_ComputeChecksum(LIN_DATA_S *linMessage);
-static void LIN_MessagesReceiveHandel(void);
+static void LIN_MessagesRxHandel(void);
+static void LIN_MessagesTxHandel(void);
 static void LIN_MessagesSentHandel(void);
+static void LIN_RX_MASTERCAL_MessagesUpdate(void);
 void HAL_UART_RxManage(void);
 /* USER CODE END 0 */
 
@@ -289,10 +298,25 @@ void HAL_UART_RxManage(void)
         linTransferData.pid = LIN_ID2PID(linTransferData.id);
         xEventGroupSetBitsFromISR(uartEventHandle, LIN_EVENT_SENT, &xHigherPriorityTaskWoken);
       }
+      else if(LIN_ID2PID(LIN_TX_YT_CALIBRARION_ID) == linTransferData.dataBufferArray[LIN_DATA_BUFFER_PID_INDEX])
+      {
+        linState = LIN_STATE_SEND_DATA;
+        linTransferData.length = 0x08u;
+        linTransferData.id = LIN_TX_YT_CALIBRARION_ID;
+        linTransferData.pid = LIN_ID2PID(linTransferData.id);
+        xEventGroupSetBitsFromISR(uartEventHandle, LIN_EVENT_SENT, &xHigherPriorityTaskWoken);
+      }
       else if(LIN_ID2PID(LIN_RX_MASTER_ID) == linTransferData.dataBufferArray[LIN_DATA_BUFFER_PID_INDEX])
       {
         linState = LIN_STATE_RECV_DATA;
         linTransferData.id = LIN_RX_MASTER_ID;
+        linTransferData.pid = LIN_ID2PID(linTransferData.id);
+        linTransferData.length = 0x08u;
+      }
+      else if(LIN_ID2PID(LIN_RX_MASTER_CALIBRARION_ID) == linTransferData.dataBufferArray[LIN_DATA_BUFFER_PID_INDEX])
+      {
+        linState = LIN_STATE_RECV_DATA;
+        linTransferData.id = LIN_RX_MASTER_CALIBRARION_ID;
         linTransferData.pid = LIN_ID2PID(linTransferData.id);
         linTransferData.length = 0x08u;
       }
@@ -334,7 +358,7 @@ void HAL_UART_RxManage(void)
 }
 
 
-static void LIN_MessagesReceiveHandel(void)
+static void LIN_MessagesRxHandel(void)
 {
   static uint16_t linMasterTargetPositionValue;
   static uint8_t linMasterModeCommandValue;
@@ -352,10 +376,67 @@ static void LIN_MessagesReceiveHandel(void)
     osMessageQueuePut(LIN_MasterModeCommandQueueHandle, (void *)&linMasterModeCommandValue, 0, 0);
     osMessageQueuePut(LIN_MasterTargetPositionQueueHandle, (void *)&linMasterTargetPositionValue, 0, 0);
   }
+
+  LIN_RX_MASTERCAL_MessagesUpdate();
 }
 
+static void LIN_RX_MASTERCAL_MessagesUpdate(void)
+{
+  uint8_t i;
+  uint8_t posBuffer[4];
+  
+  if(LIN_RX_MASTER_CALIBRARION_ID == linTransferData.id)
+  {
+    for(i = 0; i < linTransferData.length; i++)
+    {
+      linMasterCalMessage.dataArray[i] = linTransferData.dataArray[i];
+    }
+    
+    if(SET == linMasterCalMessage.message.enable)
+    {
+      posBuffer[0] = (uint8_t)linYtCalMessage.message.firstPos;
+      posBuffer[1] = (uint8_t)(linYtCalMessage.message.firstPos >> 8);
+      posBuffer[2] = (uint8_t)linYtCalMessage.message.secondPos;
+      posBuffer[3] = (uint8_t)(linYtCalMessage.message.secondPos >> 8);
+      EEPROM_WriteRequest(linMasterCalMessage.message.mode, posBuffer);
+    }
+  }
+}
 
-static void LIN_MessagesSentHandel(void)
+static void LIN_MessagesTxHandel(void)
+{
+  uint8_t i;
+  uint8_t tmpValue;
+  
+  if(LIN_TX_YTSENT_ID == linTransferData.id)
+  {
+    for(i = 0; i < linTransferData.length; i++)
+    {
+      linTransferData.dataArray[i] = linYtSentMessage.dataArray[i];
+    }
+    linTransferData.checksum = LIN_ComputeChecksum(&linTransferData);
+    while(HAL_UART_Transmit_IT(&huart1, linTransferData.dataArray, linTransferData.length) != HAL_OK);
+    while(HAL_UART_Transmit_IT(&huart1, &linTransferData.checksum , 1) != HAL_OK);
+    UART_Start_Receive_IT(&huart1, &tmpValue, 1);
+  }
+  else if(LIN_TX_YT_CALIBRARION_ID == linTransferData.id)
+  {
+    for(i = 0; i < linTransferData.length; i++)
+    {
+      linTransferData.dataArray[i] = linYtCalMessage.dataArray[i];
+    }
+    linTransferData.checksum = LIN_ComputeChecksum(&linTransferData);
+    while(HAL_UART_Transmit_IT(&huart1, linTransferData.dataArray, linTransferData.length) != HAL_OK);
+    while(HAL_UART_Transmit_IT(&huart1, &linTransferData.checksum , 1) != HAL_OK);
+    UART_Start_Receive_IT(&huart1, &tmpValue, 1);
+  }
+  else
+  {
+    /* Do nothing */
+  }
+}
+
+static void LIN_TX_YTSENT_MessagesUpdate(void)
 {
   static uint16_t linCurrentPositionValue;
   static uint16_t linYtSentCurrentPositionValue;
@@ -367,13 +448,35 @@ static void LIN_MessagesSentHandel(void)
   uint8_t *msg_prio;
 
   osMessageQueueGet(SENT_CurrentPositionQueueHandle, (void *)&linYtSentCurrentPositionValue, msg_prio, 0); 
-  //linYtSentCurrentPositionValue = (uint16_t)positionValue;
   linAngleValue = linYtSentCurrentPositionValue * 3400 / 40950;
   linYtSentMessage.dataArray[0] = (uint8_t)(linYtSentCurrentPositionValue);
   linYtSentMessage.dataArray[1] = (uint8_t)(linYtSentCurrentPositionValue >> 8);
 
   linYtSentMessage.dataArray[2] = (uint8_t)(linAngleValue);
   linYtSentMessage.dataArray[3] = (uint8_t)(linAngleValue >> 8);
+}
+
+
+static void LIN_TX_YTCAL_MessagesUpdate(void)
+{
+  static EE_ITEM_E modeName;
+  uint8_t posBuffer[4];
+  
+  if(modeName < EE_MODE7_POSITION)
+  {
+    modeName++;
+  }
+  else
+  {
+    modeName = 0;
+  }
+
+  EEPROM_ReadRequest(modeName, posBuffer);
+
+  linYtCalMessage.message.mode = (uint8_t)modeName;
+  linYtCalMessage.message.firstPos = (uint16_t)(posBuffer[0] + posBuffer[1] * 256);
+  linYtCalMessage.message.secondPos = (uint16_t)(posBuffer[2] + posBuffer[3] * 256);
+  
 }
 
 void HAL_UART_Task(void * argument)
@@ -401,8 +504,11 @@ void HAL_UART_Task(void * argument)
 
     if(LIN_EVENT_SENT == (eventTrigger & LIN_EVENT_SENT))
     {
+      //LIN_MessagesTxHandel();
+#if 1
       if(LIN_TX_YTSENT_ID == linTransferData.id)
       {
+        LIN_TX_YTSENT_MessagesUpdate();
         for(i = 0; i < linTransferData.length; i++)
         {
           linTransferData.dataArray[i] = linYtSentMessage.dataArray[i];
@@ -412,21 +518,32 @@ void HAL_UART_Task(void * argument)
         while(HAL_UART_Transmit_IT(&huart1, &linTransferData.checksum , 1) != HAL_OK);
         UART_Start_Receive_IT(&huart1, &tmpValue, 1);
       }
+      else if(LIN_TX_YT_CALIBRARION_ID == linTransferData.id)
+      {
+        LIN_TX_YTCAL_MessagesUpdate();
+        for(i = 0; i < linTransferData.length; i++)
+        {
+          linTransferData.dataArray[i] = linYtCalMessage.dataArray[i];
+        }
+        linTransferData.checksum = LIN_ComputeChecksum(&linTransferData);
+        while(HAL_UART_Transmit_IT(&huart1, linTransferData.dataArray, linTransferData.length) != HAL_OK);
+        while(HAL_UART_Transmit_IT(&huart1, &linTransferData.checksum , 1) != HAL_OK);
+        UART_Start_Receive_IT(&huart1, &tmpValue, 1);
+      }
+      else
+      {
+        /* Do nothing */
+      }
+#endif
     }
     else if(LIN_EVENT_RECEIVE == (eventTrigger & LIN_EVENT_RECEIVE))
     {
-      if(LIN_RX_MASTER_ID == linTransferData.id)
-      {
-        LIN_MessagesReceiveHandel();
-      }
+      LIN_MessagesRxHandel();
     }
     else
     {
       /* Do nothing */
     }
-
-    /* Put message going to be sent to sentBuffer */
-    LIN_MessagesSentHandel();
   }
 }
 

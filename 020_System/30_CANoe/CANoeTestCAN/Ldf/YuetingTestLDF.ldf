@@ -15,6 +15,14 @@ Signals {
   MASTER_ModeCommand: 8, 0, LIN_Master, Yueting ;
   MASTER_TargetPosition: 16, 0, LIN_Master, Yueting ;
   YT_SENT_Angle: 16, 0, Yueting, LIN_Master ;
+  YT_CAL_Mode: 8, 0, Yueting, LIN_Master ;
+  YT_CAL_FirstPos: 16, 0, Yueting, LIN_Master ;
+  YT_CAL_SecondPos: 16, 0, Yueting, LIN_Master ;
+  YT_CAL_Enable: 8, 0, Yueting, LIN_Master ;
+  MASTER_CAL_Mode: 8, 0, LIN_Master, Yueting ;
+  MASTER_CAL_FirstPos: 16, 0, LIN_Master, Yueting ;
+  MASTER_CAL_SecondPos: 16, 0, LIN_Master, Yueting ;
+  MASTER_CAL_Enable: 8, 0, LIN_Master, Yueting ;
 }
 
 Diagnostic_signals {
@@ -46,6 +54,17 @@ Frames {
   MASTER: 4, LIN_Master, 8 {
     MASTER_ModeCommand, 0 ;
     MASTER_TargetPosition, 8 ;
+  }
+  YT_CAL: 34, Yueting, 8 {
+    YT_CAL_Mode, 0 ;
+    YT_CAL_FirstPos, 8 ;
+    YT_CAL_SecondPos, 24 ;
+  }
+  MASTER_CAL: 33, LIN_Master, 8 {
+    MASTER_CAL_Mode, 0 ;
+    MASTER_CAL_FirstPos, 8 ;
+    MASTER_CAL_SecondPos, 24 ;
+    MASTER_CAL_Enable, 40 ;
   }
 }
 
@@ -87,6 +106,8 @@ Node_attributes {
     configurable_frames {
       YT_SENT ;
       MASTER ;
+      YT_CAL ;
+      MASTER_CAL ;
     }
   }
 }
@@ -95,6 +116,8 @@ Schedule_tables {
  ScheduleTable {
     YT_SENT delay 10 ms ;
     MASTER delay 10 ms ;
+    MASTER_CAL delay 10 ms ;
+    YT_CAL delay 10 ms ;
   }
 }
 

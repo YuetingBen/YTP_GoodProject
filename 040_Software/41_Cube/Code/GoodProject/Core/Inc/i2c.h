@@ -35,13 +35,29 @@ extern "C" {
 extern I2C_HandleTypeDef hi2c2;
 
 /* USER CODE BEGIN Private defines */
-
+typedef enum
+{
+  EE_MODE0_POSITION,
+  EE_MODE1_POSITION,
+  EE_MODE2_POSITION,
+  EE_MODE3_POSITION,
+  EE_MODE4_POSITION,
+  EE_MODE5_POSITION,
+  EE_MODE6_POSITION,
+  EE_MODE7_POSITION,
+  EE_A,
+  EE_B,
+  EE_C,
+  EE_MODE_MAX_NUM_ITEM
+}EE_ITEM_E;
 /* USER CODE END Private defines */
 
 void MX_I2C2_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 extern void EEPROM_Task(void *argument);
+extern void EEPROM_WriteRequest(EE_ITEM_E name,  uint8_t *pData);
+extern void EEPROM_ReadRequest(EE_ITEM_E name,  uint8_t *pData);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
