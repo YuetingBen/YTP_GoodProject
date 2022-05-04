@@ -253,9 +253,12 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
 
 void EEPROM_WriteRequest(EE_ITEM_E name,  uint8_t *pData)
 {
-  EE_HANDEL_TYPE_S *itemPtr = &eeData[name];
-  uint8_t writeFlag = RESET;
+  EE_HANDEL_TYPE_S *itemPtr;
+  uint8_t writeFlag;
   uint8_t i;
+  
+  writeFlag = RESET;
+  itemPtr = &eeData[name];
   for(i = 0; i < itemPtr->dataLen; i++)
   {
     if(pData[i] != itemPtr->dataBufferPtr[i])

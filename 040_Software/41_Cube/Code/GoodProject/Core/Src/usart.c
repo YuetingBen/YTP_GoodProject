@@ -394,10 +394,10 @@ static void LIN_RX_MASTERCAL_MessagesUpdate(void)
     
     if(SET == linMasterCalMessage.message.enable)
     {
-      posBuffer[0] = (uint8_t)linYtCalMessage.message.firstPos;
-      posBuffer[1] = (uint8_t)(linYtCalMessage.message.firstPos >> 8);
-      posBuffer[2] = (uint8_t)linYtCalMessage.message.secondPos;
-      posBuffer[3] = (uint8_t)(linYtCalMessage.message.secondPos >> 8);
+      posBuffer[0] = (uint8_t)linMasterCalMessage.message.firstPos;
+      posBuffer[1] = (uint8_t)(linMasterCalMessage.message.firstPos >> 8);
+      posBuffer[2] = (uint8_t)linMasterCalMessage.message.secondPos;
+      posBuffer[3] = (uint8_t)(linMasterCalMessage.message.secondPos >> 8);
       EEPROM_WriteRequest(linMasterCalMessage.message.mode, posBuffer);
     }
   }
