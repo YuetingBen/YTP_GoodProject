@@ -280,7 +280,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
   static uint32_t counter;
   static uint32_t counterOld;
   static uint32_t counterDelta;
-  uint8_t crcValue;
+  static uint8_t crcValue;
   
   /* Prevent unused argument(s) compilation warning */
   if(htim->Instance==TIM1)
@@ -298,7 +298,19 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
     {
       index = 0;
     }
-    dataList[index] = (uint8_t)((counterDelta - 2)/3 + 1 - 12);
+    if(counterDelta > 500)
+    {
+      counterDelta++;
+    }
+    dataList[index] = (uint8_t)((counterDelta - 2)/3 + 1);
+    if(dataList[index] > 12)
+    {
+      dataList[index] = dataList[index] -12;
+    }
+    else
+    {
+      dataList[index] = 0;
+    }
 
     if(index >= 8)
     {

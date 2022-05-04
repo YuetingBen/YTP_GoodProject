@@ -58,6 +58,7 @@ void MX_I2C2_Init(void);
 extern void EEPROM_Task(void *argument);
 extern void EEPROM_WriteRequest(EE_ITEM_E name,  uint8_t *pData);
 extern void EEPROM_ReadRequest(EE_ITEM_E name,  uint8_t *pData);
+extern void EEPROM_GetPosition(EE_ITEM_E name,  uint16_t *firstPos, uint16_t *secondPos);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

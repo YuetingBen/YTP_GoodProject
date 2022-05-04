@@ -18,7 +18,7 @@
         <LeaveTargetRunning>_ 0</LeaveTargetRunning>
     </StLinkDriver>
     <DebugChecksum>
-        <Checksum>384311742</Checksum>
+        <Checksum>915092238</Checksum>
     </DebugChecksum>
     <Exceptions>
         <StopOnUncaught>_ 0</StopOnUncaught>
@@ -47,9 +47,10 @@
         <Fmt5>PWM_MOTOR_OUT_S-pwmMotorOutHigh	3	0</Fmt5>
     </struct_types>
     <array_types>
-        <Fmt0>uint8_t[30]	3	0</Fmt0>
-        <Fmt1>uint8_t[4]	4	0</Fmt1>
-        <Fmt2>uint8_t[5]	4	0</Fmt2>
+        <Fmt0>uint8_t[10]	3	0</Fmt0>
+        <Fmt1>uint8_t[30]	3	0</Fmt1>
+        <Fmt2>uint8_t[4]	4	0</Fmt2>
+        <Fmt3>uint8_t[5]	4	0</Fmt3>
     </array_types>
     <watch_formats>
         <Fmt0>{W}1:DevAddress	4	0</Fmt0>
@@ -61,6 +62,7 @@
         <Fmt6>{W}1:modeTargetPos	3	0</Fmt6>
         <Fmt7>{W}1:osStatus	4	0</Fmt7>
         <Fmt8>{W}1:positionValueDelta	3	0</Fmt8>
+        <Fmt9>{W}42:crcValue	3	0</Fmt9>
     </watch_formats>
     <Trace1>
         <Enabled>0</Enabled>
@@ -70,17 +72,19 @@
         <mode>0</mode>
     </DisassembleMode>
     <Breakpoints2>
-        <Bp0>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\i2c.c}.261.3" 0 0 1 "" 0 "" 0</Bp0>
-        <Bp1>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\i2c.c}.274.7" 0 0 1 "" 0 "" 0</Bp1>
-        <Bp2>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\i2c.c}.266.7" 0 0 1 "" 0 "" 0</Bp2>
-        <Bp3>_ 1 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\usart.c}.401.7" 0 0 1 "" 0 "" 0</Bp3>
-        <Count>4</Count>
+        <Bp0>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\tim.c}.303.7" 0 0 1 "" 0 "" 0</Bp0>
+        <Bp1>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\tim.c}.308.7" 0 0 1 "" 0 "" 0</Bp1>
+        <Count>2</Count>
     </Breakpoints2>
     <LogFile>
         <LoggingEnabled>_ 0</LoggingEnabled>
         <LogFile>_ ""</LogFile>
         <Category>_ 0</Category>
     </LogFile>
+    <TermIOLog>
+        <LoggingEnabled>_ 0</LoggingEnabled>
+        <LogFile>_ ""</LogFile>
+    </TermIOLog>
     <Aliases>
         <Count>0</Count>
         <SuppressDialog>0</SuppressDialog>
@@ -98,8 +102,8 @@
     <CallStackStripe>
         <ShowTiming>1</ShowTiming>
     </CallStackStripe>
-    <TermIOLog>
-        <LoggingEnabled>_ 0</LoggingEnabled>
-        <LogFile>_ ""</LogFile>
-    </TermIOLog>
 </settings>
+[JLinkDriver]
+TraceBufferSize=0x00010000
+TraceStallIfFIFOFull=0x00000000
+TracePortSize=0x00000000

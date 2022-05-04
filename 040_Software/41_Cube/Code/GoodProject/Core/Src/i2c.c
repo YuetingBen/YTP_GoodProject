@@ -250,6 +250,12 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
 }
 
 /* USER CODE BEGIN 1 */
+void EEPROM_GetPosition(EE_ITEM_E name,  uint16_t *firstPos, uint16_t *secondPos)
+{
+  *firstPos = eeMirrorData.eePosition[name].firstPosition;
+  *secondPos = eeMirrorData.eePosition[name].secondPosition;
+}
+
 
 void EEPROM_WriteRequest(EE_ITEM_E name,  uint8_t *pData)
 {

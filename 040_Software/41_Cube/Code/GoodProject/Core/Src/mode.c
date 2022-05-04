@@ -2,6 +2,7 @@
 
 #include "usart.h"
 #include "tim.h"
+#include "i2c.h"
 
 #include "FreeRTOS.h" 
 #include "event_groups.h"
@@ -185,8 +186,9 @@ static void MODE_ModeCommandChange(void)
     {
       if(modeCommand < MODE_MAX_NUM)
       {
-        firstPos = modePosition[modeCommand].firstValvePosition;
-        secondtPos = modePosition[modeCommand].secondValvePosition;
+        //firstPos = modePosition[modeCommand].firstValvePosition;
+        //secondtPos = modePosition[modeCommand].secondValvePosition;
+        EEPROM_GetPosition(modeCommand, &firstPos, &secondtPos);
         
         modeRunStep = MODE_MODE_CHANGE_STEP_TO_FIRST_POSITION;
         runCycle = 0;
@@ -287,6 +289,8 @@ static void MODE_MotorAction(void)
         positionValueDelta = (uint16_t)(modeCurrentPosOld - modeCurrentPos);
       }
       /* Push delta value to buffer, length PARAMATERNUMBER */
+      if(positionValueDelta < 100)
+      {
       for(i = 0; i < (PARAMATERNUMBER - 1); i++)
       {
         positionValueDeltaList[PARAMATERNUMBER - 1 - i] = positionValueDeltaList[PARAMATERNUMBER -2 - i];
@@ -307,6 +311,7 @@ static void MODE_MotorAction(void)
         modeMotorOut.modeMotorOutHigh = 100;
         modeMotorOut.modeMotorOutLow= 100;
       }
+      }
       
       break;
     }
@@ -322,6 +327,8 @@ static void MODE_MotorAction(void)
         positionValueDelta = (uint16_t)(modeCurrentPosOld - modeCurrentPos);
       }
       /* Push delta value to buffer, length PARAMATERNUMBER */
+      if(positionValueDelta < 100)
+      {
       for(i = 0; i < (PARAMATERNUMBER - 1); i++)
       {
         positionValueDeltaList[(PARAMATERNUMBER - 1) - i] = positionValueDeltaList[(PARAMATERNUMBER - 2) - i];
@@ -336,13 +343,14 @@ static void MODE_MotorAction(void)
       }
       positionValueDeltaAverage = positionValueDeltaAverage/PARAMATERNUMBER;
       
-      if(modeCurrentPos < (modeTargetPos + (PARAMATER * positionValueDeltaAverage)))
+      if(modeCurrentPos < (modeTargetPos + (PARAMATER * 10)))
       {
         modeMotorRunStep = MODE_MOTOR_RUN_STEP_BRAKE;
         brakeTimer = 0;
 
         modeMotorOut.modeMotorOutHigh = 100;
         modeMotorOut.modeMotorOutLow= 100;
+      }
       }
       break;
     }
