@@ -1,0 +1,53 @@
+/*@!Encoding:936*/
+includes
+{
+  
+}
+
+variables
+{
+  linmessage MASTER_CAL MASTER_CAL_Frame;
+  msTimer calTimer;
+  
+  byte mode;
+}
+
+on key 'a'
+{
+  mode = 0;
+  setTimer(calTimer, 1000);
+}
+
+on key 'b'
+{
+  linChangeSchedTable(1);
+}
+
+on timer calTimer
+{
+  word calibrationFirstPosArray[9] = {2409, 2770, 2409, 964, 2770, 3011, 2409, 1813, 2178};
+  word calibrationSecondPosArray[9] = {1204, 1566, 1204, 964, 1204, 2409, 1204, 1204, 973};
+
+
+  if(mode <= 8)
+  {
+    MASTER_CAL_Frame.byte(0) = mode;
+    MASTER_CAL_Frame.byte(1) = (byte)calibrationFirstPosArray[mode];
+    MASTER_CAL_Frame.byte(2) = (byte)(calibrationFirstPosArray[mode] >> 8);
+      
+    MASTER_CAL_Frame.byte(3) = (byte)calibrationSecondPosArray[mode];
+    MASTER_CAL_Frame.byte(4) = (byte)(calibrationSecondPosArray[mode] >> 8);
+    
+    MASTER_CAL_Frame.byte(5) = 1;
+    
+    mode = mode + 1;
+    output(MASTER_CAL_Frame);
+  }
+  else
+  {
+    MASTER_CAL_Frame.byte(5) = 0;
+    output(MASTER_CAL_Frame);
+  }
+  
+  setTimer(calTimer, 1000);
+}

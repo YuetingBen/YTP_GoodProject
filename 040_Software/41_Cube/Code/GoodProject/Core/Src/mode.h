@@ -41,6 +41,8 @@ void MODE_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 void MODE_Task(void *argument);
+extern uint8_t MODE_GetModeStatus(void);
+uint8_t MODE_GetModeErrorStatus(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

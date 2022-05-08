@@ -22,14 +22,15 @@
 
 typedef enum
 {
-  MODE_1 = 0x00,
+  MODE_0 = 0x00,
+  MODE_1,
   MODE_2,
   MODE_3,
   MODE_4,
   MODE_5,
   MODE_6,
   MODE_7,
-  MODE_8,
+  MODE_8, 
   MODE_MAX_NUM,
   MODE_INVALID = 0xFF
 }MODE_COMMAND_E;
@@ -90,6 +91,14 @@ typedef struct
   uint16_t secondValvePosition;
 }MODE_POSITION_S;
 
+typedef enum
+{
+  MODE_CURRENT_STATUS_INIT_IN_PROCESS,
+  MODE_CURRENT_STATUS_INIT_READY,
+  MODE_CURRENT_STATUS_INIT_ERROR,
+  MODE_CURRENT_STATUS_MOVING,
+  MODE_CURRENT_STATUS_NO_MOVEMENT
+}MODE_CURRENT_STATUS_S;
 
 extern osEventFlagsId_t MotorOutEventHandle;
 extern osMessageQueueId_t SENT_CurrentPositionQueueHandle;
@@ -101,7 +110,6 @@ extern uint16_t positionValue;
 
 
 static volatile MODE_COMMAND_E modeCommand;
-//MODE_COMMAND_E modeCommand;
 static MODE_COMMAND_E currentMode;
 
 static uint8_t runCycle;
@@ -118,17 +126,8 @@ static MODE_MOTOR_OUT_S *modeMotorOutOldPtr;
 static MODE_MOTOR_RUN_STEP_E modeMotorRunStep;
 
 static MODE_MOTOR_STATUS_S modeMotorStatus;
-
-static MODE_POSITION_S modePosition[MODE_MAX_NUM] = {\
-  {12044, 2409},  /* First step is 100 Second step is 20 */
-  {36132, 3613},  /* First step is 300 Second step is 30 */
-  {24088, 6022},  /* First step is 200 Second step is 50 */
-  {13249, 9635},  /* First step is 110 Second step is 80 */
-  {38541, 30110},  /* First step is 320 Second step is 250 */
-  {38541, 6022},  /* First step is 320 Second step is 50 */
-  {32519, 21679},  /* First step is 270 Second step is 180 */
-  {24088, 9635}};  /* First step is 200 Second step is 80 */
-
+static MODE_CURRENT_STATUS_S modeCurrentStatus;
+static uint8_t errorStatus;
 
 static void MODE_MotorAction(void);
 
@@ -142,6 +141,8 @@ void MODE_Init(void)
   modeTargetPos = 0;
   modeMotorOut.modeMotorOutHigh = 0;
   modeMotorOut.modeMotorOutLow = 0;
+  modeCurrentStatus = MODE_CURRENT_STATUS_NO_MOVEMENT;
+  currentMode = MODE_INVALID;
 }
 
 static void MODE_ModePositionChange(void)
@@ -186,13 +187,17 @@ static void MODE_ModeCommandChange(void)
     {
       if(modeCommand < MODE_MAX_NUM)
       {
-        //firstPos = modePosition[modeCommand].firstValvePosition;
-        //secondtPos = modePosition[modeCommand].secondValvePosition;
         EEPROM_GetPosition(modeCommand, &firstPos, &secondtPos);
+        firstPos = firstPos * 10;
+        secondtPos = secondtPos * 10;
         
         modeRunStep = MODE_MODE_CHANGE_STEP_TO_FIRST_POSITION;
         runCycle = 0;
       } 
+      else
+      {
+        controlMode = MODE_CONTROL_MODE_NONE;
+      }
       break;
     }
     case MODE_MODE_CHANGE_STEP_TO_FIRST_POSITION:
@@ -229,6 +234,8 @@ static void MODE_ModeCommandChange(void)
         modeRunStep = MODE_MODE_CHANGE_STEP_IDLE;
         controlMode = MODE_CONTROL_MODE_NONE;
         runCycle = 0;
+
+        currentMode = modeCommand;
       }
       break;
     }
@@ -343,7 +350,7 @@ static void MODE_MotorAction(void)
       }
       positionValueDeltaAverage = positionValueDeltaAverage/PARAMATERNUMBER;
       
-      if(modeCurrentPos < (modeTargetPos + (PARAMATER * 10)))
+      if(modeCurrentPos < (modeTargetPos + (PARAMATER * positionValueDeltaAverage)))
       {
         modeMotorRunStep = MODE_MOTOR_RUN_STEP_BRAKE;
         brakeTimer = 0;
@@ -399,7 +406,9 @@ void MODE_ControlModeHandel(void)
   static uint8_t masterModeCommand;
 
   static uint8_t masterModeCommandOld;
-  static uint16_t masterTargetPosOld;
+  static uint16_t masterTargetPosOld = 0xFFFF;
+
+  static uint16_t timer;
 
   uint8_t *msg_prio;
 
@@ -408,7 +417,7 @@ void MODE_ControlModeHandel(void)
 
   if(MODE_CONTROL_MODE_NONE == controlMode)
   {
-    if(masterModeCommandOld != masterModeCommand)
+    if(((masterModeCommandOld != masterModeCommand) && (0xFFFF != masterTargetPosOld))|| (currentMode != masterModeCommand))
     {
       modeCommand = (MODE_COMMAND_E)masterModeCommand;
       controlMode = MODE_CONTROL_MODE_LIN_COMMAND;
@@ -457,10 +466,41 @@ void MODE_ControlModeHandel(void)
   if(MODE_CONTROL_MODE_NONE != controlMode)
   {
     MODE_MotorAction();
+    modeCurrentStatus = MODE_CURRENT_STATUS_MOVING;
+    /* If running timer over 10s, report error */
+    if(timer > 10000)
+    {
+      errorStatus = SET;
+    }
+    else
+    {
+      timer++;
+      errorStatus = RESET;
+    }
+  }
+  else
+  {
+    modeCurrentStatus = MODE_CURRENT_STATUS_NO_MOVEMENT;
+    timer = 0;
   }
   
   masterModeCommandOld = masterModeCommand;
   masterTargetPosOld = masterTargetPos;
+}
+
+uint8_t MODE_GetModeStatus(void)
+{
+  return((uint8_t)modeCurrentStatus);
+}
+
+uint8_t MODE_GetModeErrorStatus(void)
+{
+  return((uint8_t)errorStatus);
+}
+
+uint8_t MODE_GetMode(void)
+{
+  return((uint8_t)currentMode);
 }
 
 void MODE_Task(void *argument)
@@ -473,10 +513,10 @@ void MODE_Task(void *argument)
   uint8_t *msg_prio;
   
   MODE_Init();
+  osDelay(1000);
 
   for(;;)
   {
-    //osMessageQueueGet(SENT_CurrentPositionQueueHandle, (uint16_t *)&positionValueTemp, msg_prio, 0);
     positionValueTemp = positionValue;
     if((positionValueOld >= (MOTOR_340_STEP - MOTOR_BOUNDARY_VALUE_STEP)) && (positionValueTemp <= MOTOR_BOUNDARY_VALUE_STEP))
     {

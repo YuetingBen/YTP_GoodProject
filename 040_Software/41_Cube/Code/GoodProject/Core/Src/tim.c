@@ -315,7 +315,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
     if(index >= 8)
     {
       crcValue = crc4_cal(&dataList[2], 6);
-      if(crcValue == dataList[8] )
+      if((crcValue == dataList[8] ) && (dataList[2]  <= 0x0F) && (dataList[3]  <= 0x0F) && (dataList[4]  <= 0x0F))
       {
         positionValue = dataList[2] * 256 + dataList[3] * 16 + dataList[4];
 

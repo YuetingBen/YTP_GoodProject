@@ -29,58 +29,7 @@ extern "C" {
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
-#pragma pack (1)
-typedef struct
-{
-  uint8_t masterModeCommand;
-  uint16_t masterTargetPos;
-}LIN_MASTER_MESSAGE_S;
 
-typedef union
-{
-  LIN_MASTER_MESSAGE_S message;
-  uint8_t dataArray[8];
-}LIN_MASTER_MESSAGE_U;
-
-typedef struct
-{
-  uint16_t currentPos;
-  uint16_t angle;
-}LIN_YTSENT_MESSAGE_S;
-
-typedef union
-{
-  LIN_YTSENT_MESSAGE_S message;
-  uint8_t dataArray[8];
-}LIN_YTSENT_MESSAGE_U;
-
-typedef struct
-{
-  uint8_t mode;
-  uint16_t firstPos;
-  uint16_t secondPos;
-}LIN_YTCAL_MESSAGE_S;
-
-typedef union
-{
-  LIN_YTCAL_MESSAGE_S message;
-  uint8_t dataArray[8];
-}LIN_YTCAL_MESSAGE_U;
-
-typedef struct
-{
-  uint8_t mode;
-  uint16_t firstPos;
-  uint16_t secondPos;
-  uint8_t enable;
-}LIN_MASTERCAL_MESSAGE_S;
-
-typedef union
-{
-  LIN_MASTERCAL_MESSAGE_S message;
-  uint8_t dataArray[8];
-}LIN_MASTERCAL_MESSAGE_U;
-#pragma pack ()
 /* USER CODE END Includes */
 
 extern UART_HandleTypeDef huart1;

@@ -37,7 +37,7 @@ typedef struct
 #pragma pack (1)
 typedef struct
 {
-  EE_POSITION_S eePosition[8];
+  EE_POSITION_S eePosition[9];
   uint16_t testDataU16;
   uint8_t testDataU8;
   uint8_t testDataU8Arrat[5];
@@ -70,6 +70,7 @@ static EE_DATA_TYPE_S eeDefaultData = {\
   {0x0894, 0x0634},
   {0x0955, 0x0335},
   {0x0A76, 0x0436},
+  {0x0B37, 0x0937},
   {0x0B37, 0x0937},
   {0x0C08, 0x0838}},
   0xabcd,
@@ -136,6 +137,13 @@ static EE_HANDEL_TYPE_S eeData[EE_MODE_MAX_NUM_ITEM] = {\
   (uint8_t *)&eeDefaultData.eePosition[EE_MODE7_POSITION], 
   sizeof(EE_POSITION_S), 
   (uint16_t)((uint8_t *)&eeDefaultData.eePosition[EE_MODE7_POSITION] - (uint8_t *)&eeDefaultData)},
+
+  /* EE_MODE8_POSITION */
+  {EE_MODE8_POSITION, EE_IDEL, 
+  (uint8_t *)&eeMirrorData.eePosition[EE_MODE8_POSITION], 
+  (uint8_t *)&eeDefaultData.eePosition[EE_MODE8_POSITION], 
+  sizeof(EE_POSITION_S), 
+  (uint16_t)((uint8_t *)&eeDefaultData.eePosition[EE_MODE8_POSITION] - (uint8_t *)&eeDefaultData)},
 
   /* EE_A */
   {EE_A, EE_IDEL, 
@@ -389,7 +397,6 @@ static void EEPROM_Handel(void)
 
 void EEPROM_Task(void *argument)
 {
-  static uint8_t dataTemp[10] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
   EEPROM_DataInitRead();
   for(;;)
   {

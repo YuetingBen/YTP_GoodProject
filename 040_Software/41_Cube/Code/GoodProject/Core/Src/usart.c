@@ -27,13 +27,19 @@
 #include "cmsis_os2.h"
 
 #include "i2c.h"
+#include "mode.h"
 
+#define SOFTWARE_VERSION_NUMBER    0x10
 #define LIN_BREAK_VALUE      0x00u
-#define LIN_SYNC_VALUE      0x55u
-#define LIN_RX_MASTER_ID      0x04u
-#define LIN_TX_YTSENT_ID      0x03u
+#define LIN_SYNC_VALUE       0x55u
 
-#define LIN_RX_MASTER_CALIBRARION_ID      0x21u
+#define LIN_RX_MASTER_ID          0x04u
+#define LIN_TX_YTSENT_ID          0x03u
+
+#define LIN_RX_MASTER_MCV_ID      0x34u
+#define LIN_TX_YT_STATUS_ID       0x35u
+
+#define LIN_RX_MASTER_CALIBRARION_ID          0x21u
 #define LIN_TX_YT_CALIBRARION_ID              0x22u
 
 #define LIN_EVENT_SENT         1 << 0
@@ -93,12 +99,91 @@ typedef struct
 }LIN_DATA_S;
 
 
+#pragma pack (1)
+typedef struct
+{
+  uint8_t masterModeCommand;
+  uint16_t masterTargetPos;
+}LIN_MASTER_MESSAGE_S;
+
+typedef union
+{
+  LIN_MASTER_MESSAGE_S message;
+  uint8_t dataArray[8];
+}LIN_MASTER_MESSAGE_U;
+
+typedef union
+{
+  uint8_t masterModeCommand;
+  uint8_t dataArray[8];
+}LIN_MASTERMCV_MESSAGE_U;
+
+typedef struct
+{
+  uint16_t currentPos;
+  uint16_t angle;
+}LIN_YTSENT_MESSAGE_S;
+
+typedef union
+{
+  LIN_YTSENT_MESSAGE_S message;
+  uint8_t dataArray[8];
+}LIN_YTSENT_MESSAGE_U;
+
+
+typedef struct
+{
+  uint8_t workingMode;
+  uint8_t currentStatus : 4;
+  uint8_t error : 1;
+  uint8_t reverse1 :3;
+  uint8_t reverse2[5];
+  uint8_t version;
+}LIN_YTSTATUS_MESSAGE_S;
+
+typedef union
+{
+  LIN_YTSTATUS_MESSAGE_S message;
+  uint8_t dataArray[8];
+}LIN_YTSTATUS_MESSAGE_U;
+
+typedef struct
+{
+  uint8_t mode;
+  uint16_t firstPos;
+  uint16_t secondPos;
+}LIN_YTCAL_MESSAGE_S;
+
+typedef union
+{
+  LIN_YTCAL_MESSAGE_S message;
+  uint8_t dataArray[8];
+}LIN_YTCAL_MESSAGE_U;
+
+typedef struct
+{
+  uint8_t mode;
+  uint16_t firstPos;
+  uint16_t secondPos;
+  uint8_t enable;
+}LIN_MASTERCAL_MESSAGE_S;
+
+typedef union
+{
+  LIN_MASTERCAL_MESSAGE_S message;
+  uint8_t dataArray[8];
+}LIN_MASTERCAL_MESSAGE_U;
+#pragma pack ()
+
+
 
 
 static LIN_DATA_S linTransferData;
 static LIN_STATE_E linState = LIN_STATE_IDLE;
 static LIN_MASTER_MESSAGE_U linMasterMessage;
 static LIN_YTSENT_MESSAGE_U linYtSentMessage;
+static LIN_MASTERMCV_MESSAGE_U linMasterMcvMessage;
+static LIN_YTSTATUS_MESSAGE_U linYtStatusMessage;
 static LIN_YTCAL_MESSAGE_U linYtCalMessage;
 static LIN_MASTERCAL_MESSAGE_U linMasterCalMessage;
 
@@ -114,6 +199,8 @@ static uint8_t LIN_ComputeChecksum(LIN_DATA_S *linMessage);
 static void LIN_MessagesRxHandel(void);
 static void LIN_MessagesTxHandel(void);
 static void LIN_MessagesSentHandel(void);
+static void LIN_RX_MASTER_MessagesUpdate(void);
+static void LIN_RX_MASTERMCV_MessagesUpdate(void);
 static void LIN_RX_MASTERCAL_MessagesUpdate(void);
 void HAL_UART_RxManage(void);
 /* USER CODE END 0 */
@@ -144,6 +231,7 @@ void MX_USART1_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART1_Init 2 */
+
   /* USER CODE END USART1_Init 2 */
 
 }
@@ -298,6 +386,14 @@ void HAL_UART_RxManage(void)
         linTransferData.pid = LIN_ID2PID(linTransferData.id);
         xEventGroupSetBitsFromISR(uartEventHandle, LIN_EVENT_SENT, &xHigherPriorityTaskWoken);
       }
+      else if(LIN_ID2PID(LIN_TX_YT_STATUS_ID) == linTransferData.dataBufferArray[LIN_DATA_BUFFER_PID_INDEX])
+      {
+        linState = LIN_STATE_SEND_DATA;
+        linTransferData.length = 0x08u;
+        linTransferData.id = LIN_TX_YT_STATUS_ID;
+        linTransferData.pid = LIN_ID2PID(linTransferData.id);
+        xEventGroupSetBitsFromISR(uartEventHandle, LIN_EVENT_SENT, &xHigherPriorityTaskWoken);
+      }
       else if(LIN_ID2PID(LIN_TX_YT_CALIBRARION_ID) == linTransferData.dataBufferArray[LIN_DATA_BUFFER_PID_INDEX])
       {
         linState = LIN_STATE_SEND_DATA;
@@ -310,6 +406,13 @@ void HAL_UART_RxManage(void)
       {
         linState = LIN_STATE_RECV_DATA;
         linTransferData.id = LIN_RX_MASTER_ID;
+        linTransferData.pid = LIN_ID2PID(linTransferData.id);
+        linTransferData.length = 0x08u;
+      }
+      else if(LIN_ID2PID(LIN_RX_MASTER_MCV_ID) == linTransferData.dataBufferArray[LIN_DATA_BUFFER_PID_INDEX])
+      {
+        linState = LIN_STATE_RECV_DATA;
+        linTransferData.id = LIN_RX_MASTER_MCV_ID;
         linTransferData.pid = LIN_ID2PID(linTransferData.id);
         linTransferData.length = 0x08u;
       }
@@ -360,9 +463,16 @@ void HAL_UART_RxManage(void)
 
 static void LIN_MessagesRxHandel(void)
 {
-  static uint16_t linMasterTargetPositionValue;
-  static uint8_t linMasterModeCommandValue;
+  LIN_RX_MASTER_MessagesUpdate();
+  LIN_RX_MASTERMCV_MessagesUpdate();
+  LIN_RX_MASTERCAL_MessagesUpdate();
+}
+
+static void LIN_RX_MASTER_MessagesUpdate(void)
+{
   uint8_t i;
+  uint16_t linMasterTargetPositionValue;
+  uint8_t linMasterModeCommandValue;
 
   if(LIN_RX_MASTER_ID == linTransferData.id)
   {
@@ -376,8 +486,23 @@ static void LIN_MessagesRxHandel(void)
     osMessageQueuePut(LIN_MasterModeCommandQueueHandle, (void *)&linMasterModeCommandValue, 0, 0);
     osMessageQueuePut(LIN_MasterTargetPositionQueueHandle, (void *)&linMasterTargetPositionValue, 0, 0);
   }
+}
 
-  LIN_RX_MASTERCAL_MessagesUpdate();
+static void LIN_RX_MASTERMCV_MessagesUpdate(void)
+{
+  uint8_t i;
+  static uint8_t linMasterModeCommandValue;
+
+  if(LIN_RX_MASTER_MCV_ID == linTransferData.id)
+  {
+    for(i = 0; i < linTransferData.length; i++)
+    {
+      linMasterMcvMessage.dataArray[i] = linTransferData.dataArray[i];
+    }
+    linMasterModeCommandValue = linMasterMcvMessage.masterModeCommand;
+
+    osMessageQueuePut(LIN_MasterModeCommandQueueHandle, (void *)&linMasterModeCommandValue, 0, 0);
+  }
 }
 
 static void LIN_RX_MASTERCAL_MessagesUpdate(void)
@@ -456,13 +581,21 @@ static void LIN_TX_YTSENT_MessagesUpdate(void)
   linYtSentMessage.dataArray[3] = (uint8_t)(linAngleValue >> 8);
 }
 
+static void LIN_TX_YTSTATUS_MessagesUpdate(void)
+{
+  linYtStatusMessage.message.workingMode = MODE_GetMode();
+  linYtStatusMessage.message.currentStatus = MODE_GetModeStatus();
+  linYtStatusMessage.message.error = MODE_GetModeErrorStatus();
+  linYtStatusMessage.message.version = SOFTWARE_VERSION_NUMBER;
+}
+
 
 static void LIN_TX_YTCAL_MessagesUpdate(void)
 {
   static EE_ITEM_E modeName;
   uint8_t posBuffer[4];
   
-  if(modeName < EE_MODE7_POSITION)
+  if(modeName < EE_MODE8_POSITION)
   {
     modeName++;
   }
@@ -512,6 +645,18 @@ void HAL_UART_Task(void * argument)
         for(i = 0; i < linTransferData.length; i++)
         {
           linTransferData.dataArray[i] = linYtSentMessage.dataArray[i];
+        }
+        linTransferData.checksum = LIN_ComputeChecksum(&linTransferData);
+        while(HAL_UART_Transmit_IT(&huart1, linTransferData.dataArray, linTransferData.length) != HAL_OK);
+        while(HAL_UART_Transmit_IT(&huart1, &linTransferData.checksum , 1) != HAL_OK);
+        UART_Start_Receive_IT(&huart1, &tmpValue, 1);
+      }
+      else if(LIN_TX_YT_STATUS_ID == linTransferData.id)
+      {
+        LIN_TX_YTSTATUS_MessagesUpdate();
+        for(i = 0; i < linTransferData.length; i++)
+        {
+          linTransferData.dataArray[i] = linYtStatusMessage.dataArray[i];
         }
         linTransferData.checksum = LIN_ComputeChecksum(&linTransferData);
         while(HAL_UART_Transmit_IT(&huart1, linTransferData.dataArray, linTransferData.length) != HAL_OK);

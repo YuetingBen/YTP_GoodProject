@@ -18,11 +18,16 @@ Signals {
   YT_CAL_Mode: 8, 0, Yueting, LIN_Master ;
   YT_CAL_FirstPos: 16, 0, Yueting, LIN_Master ;
   YT_CAL_SecondPos: 16, 0, Yueting, LIN_Master ;
-  YT_CAL_Enable: 8, 0, Yueting, LIN_Master ;
+  YT_CAL_Enable: 8, 0, Yueting ;
   MASTER_CAL_Mode: 8, 0, LIN_Master, Yueting ;
   MASTER_CAL_FirstPos: 16, 0, LIN_Master, Yueting ;
   MASTER_CAL_SecondPos: 16, 0, LIN_Master, Yueting ;
   MASTER_CAL_Enable: 8, 0, LIN_Master, Yueting ;
+  MASTER_MVC_OperationMode: 8, 0, LIN_Master, Yueting ;
+  YT_STATUS_WorkingMode: 8, 0, Yueting, LIN_Master ;
+  YT_STATUS_CurrentState: 4, 0, Yueting, LIN_Master ;
+  YT_STATUS_Error: 1, 0, Yueting, LIN_Master ;
+  YT_STATUS_Version: 8, 0, Yueting, LIN_Master ;
 }
 
 Diagnostic_signals {
@@ -66,6 +71,15 @@ Frames {
     MASTER_CAL_SecondPos, 24 ;
     MASTER_CAL_Enable, 40 ;
   }
+  MASTER_MVC: 52, LIN_Master, 8 {
+    MASTER_MVC_OperationMode, 0 ;
+  }
+  YT_STATUS: 53, Yueting, 8 {
+    YT_STATUS_WorkingMode, 0 ;
+    YT_STATUS_CurrentState, 8 ;
+    YT_STATUS_Error, 12 ;
+    YT_STATUS_Version, 56 ;
+  }
 }
 
 
@@ -108,16 +122,23 @@ Node_attributes {
       MASTER ;
       YT_CAL ;
       MASTER_CAL ;
+      MASTER_MVC ;
+      YT_STATUS ;
     }
   }
 }
 
 Schedule_tables {
- ScheduleTable {
+ CalTable {
     YT_SENT delay 10 ms ;
     MASTER delay 10 ms ;
     MASTER_CAL delay 10 ms ;
     YT_CAL delay 10 ms ;
+    YT_STATUS delay 10 ms ;
+  }
+ Normall {
+    MASTER_MVC delay 10 ms ;
+    YT_STATUS delay 10 ms ;
   }
 }
 
