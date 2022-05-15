@@ -26,7 +26,7 @@ on key 'b'
 on timer calTimer
 {
   word calibrationFirstPosArray[9] = {2409, 2770, 2409, 964, 2770, 3011, 2409, 1813, 2178};
-  word calibrationSecondPosArray[9] = {1204, 1566, 1204, 964, 1204, 2409, 1204, 1204, 973};
+  word calibrationSecondPosArray[9] = {1204, 1566, 1807, 964, 964, 2409, 602, 843, 973};
 
 
   if(mode <= 8)

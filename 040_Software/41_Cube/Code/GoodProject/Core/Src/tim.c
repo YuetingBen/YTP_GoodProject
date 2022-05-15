@@ -281,12 +281,17 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
   static uint32_t counterOld;
   static uint32_t counterDelta;
   static uint8_t crcValue;
+
+  static uint16_t positionValueTemp;
+  static uint16_t positionValueTempOld;
+  static uint16_t positionValueTempDelta;
   
   /* Prevent unused argument(s) compilation warning */
   if(htim->Instance==TIM1)
   {
     counter = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
-    if(counter > counterOld)
+
+    if(counter >= counterOld)
     {
       counterDelta = counter - counterOld;
     }
@@ -294,14 +299,11 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
     {
       counterDelta = counter + 65536 - counterOld;
     }
-    if((counterDelta > 158) && (counterDelta < 178))
+    if((counterDelta > 166) && (counterDelta < 170))
     {
       index = 0;
     }
-    if(counterDelta > 500)
-    {
-      counterDelta++;
-    }
+
     dataList[index] = (uint8_t)((counterDelta - 2)/3 + 1);
     if(dataList[index] > 12)
     {
@@ -310,27 +312,47 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
     else
     {
       dataList[index] = 0;
-    }
+    }    
 
-    if(index >= 8)
+    if(index == 8)
     {
       crcValue = crc4_cal(&dataList[2], 6);
       if((crcValue == dataList[8] ) && (dataList[2]  <= 0x0F) && (dataList[3]  <= 0x0F) && (dataList[4]  <= 0x0F))
       {
-        positionValue = dataList[2] * 256 + dataList[3] * 16 + dataList[4];
+        positionValueTemp = dataList[2] * 256 + dataList[3] * 16 + dataList[4];
 
-        positionValue = positionValue * 10;
-        timerValue = timerValue + 1;
-
+        if(positionValueTempOld > positionValueTemp)
+        {
+          positionValueTempDelta = positionValueTempOld - positionValueTemp;
+        }
+        else
+        {
+          positionValueTempDelta = positionValueTemp - positionValueTempOld;
+        }
+        if(positionValueTempDelta <= 2)
+        {
+          positionValue = positionValueTemp * 10;
+          timerValue = timerValue + 1;
+        }
         osMessageQueuePut(SENT_CurrentPositionQueueHandle, (void *)&positionValue, 0, 0);
         osThreadYield();
+
+        positionValueTempOld = positionValueTemp;
       }
     }
 
-    index++;
+    if(index <= 8)
+    {
+      index++;
+    }
+
+    counterOld = counter;
   }
 
-  counterOld = counter;
+  
+
+   // __HAL_TIM_SET_COUNTER(&htim1, 0);
+  //  counterOld = 0;
 }
 
 

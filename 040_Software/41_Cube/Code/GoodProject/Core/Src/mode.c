@@ -14,7 +14,7 @@
 #define MOTOR_BRAKE_TIME 500u  /* 500ms  */
 
 
-#define MOTOR_SMALLEST_STEP   50u  /* Angle 0.41 degree, 10 * 340 / 40950*/
+#define MOTOR_SMALLEST_STEP   100u  /* Angle 0.83 degree, 100 * 340 / 40950*/
 #define MOTOR_340_STEP    40950u  /* Angle 360 degree, 360 * 40950 / 340 */
 #define MOTOR_360_STEP    43359u  /* Angle 360 degree, 360 * 40950 / 340 */
 #define MOTOR_ONE_CYCLE_SMALLEST_STEP    43359u  /* Angle 360 degree, 360 * 40950 / 340 */
@@ -100,6 +100,10 @@ typedef enum
   MODE_CURRENT_STATUS_NO_MOVEMENT
 }MODE_CURRENT_STATUS_S;
 
+
+extern uint8_t canData[10];
+static MODE_MODE_CHANGE_STEP_S modeRunStep = MODE_MODE_CHANGE_STEP_IDLE;
+
 extern osEventFlagsId_t MotorOutEventHandle;
 extern osMessageQueueId_t SENT_CurrentPositionQueueHandle;
 extern osMessageQueueId_t LIN_MasterTargetPositionQueueHandle;
@@ -143,6 +147,7 @@ void MODE_Init(void)
   modeMotorOut.modeMotorOutLow = 0;
   modeCurrentStatus = MODE_CURRENT_STATUS_NO_MOVEMENT;
   currentMode = MODE_INVALID;
+  modeMotorStatus = MODE_MOTOR_STATUS_IDLE;
 }
 
 static void MODE_ModePositionChange(void)
@@ -160,11 +165,12 @@ static void MODE_ModePositionChange(void)
     {
       posRunStep = MODE_MODE_POSITION_ARIVE_TARGET_POSITION;
       modeTargetPos = masterTargetPos * 10;
+      modeMotorStatus = MODE_MOTOR_STATUS_START;
       break;
     }
     case MODE_MODE_POSITION_ARIVE_TARGET_POSITION:
     {
-      if(MODE_MOTOR_STATUS_IDLE == modeMotorStatus)
+      if((MODE_MOTOR_STATUS_IDLE == modeMotorStatus) || (MODE_MOTOR_STATUS_STOP == modeMotorStatus))
       {
         posRunStep = MODE_MODE_POSITION_STEP_IDLE;
         controlMode = MODE_CONTROL_MODE_NONE;
@@ -177,7 +183,7 @@ static void MODE_ModePositionChange(void)
 
 static void MODE_ModeCommandChange(void)
 {
-  static MODE_MODE_CHANGE_STEP_S modeRunStep = MODE_MODE_CHANGE_STEP_IDLE;
+  //static MODE_MODE_CHANGE_STEP_S modeRunStep = MODE_MODE_CHANGE_STEP_IDLE;
   static uint16_t firstPos;
   static uint16_t secondtPos;
 
@@ -213,7 +219,7 @@ static void MODE_ModeCommandChange(void)
     }
     case MODE_MODE_CHANGE_STEP_ARIVE_FIRST_POSITION:
     {
-      if(MODE_MOTOR_STATUS_IDLE == modeMotorStatus)
+      if((MODE_MOTOR_STATUS_IDLE == modeMotorStatus) || (MODE_MOTOR_STATUS_STOP == modeMotorStatus))
       {
         modeRunStep = MODE_MODE_CHANGE_STEP_TO_SECOND_POSITION;
         runCycle = 0;
@@ -229,7 +235,7 @@ static void MODE_ModeCommandChange(void)
     }
     case MODE_MODE_CHANGE_STEP_ARIVE_SECOND_POSITION:
     {
-      if(MODE_MOTOR_STATUS_IDLE == modeMotorStatus)
+      if((MODE_MOTOR_STATUS_IDLE == modeMotorStatus) || (MODE_MOTOR_STATUS_STOP == modeMotorStatus))
       {
         modeRunStep = MODE_MODE_CHANGE_STEP_IDLE;
         controlMode = MODE_CONTROL_MODE_NONE;
@@ -261,26 +267,32 @@ static void MODE_MotorAction(void)
   {
     case MODE_MOTOR_RUN_STEP_IDLE:
     {
-       HAL_GPIO_WritePin(UP_GPIO_Port, UP_Pin, GPIO_PIN_RESET);
-       HAL_GPIO_WritePin(DOWN_GPIO_Port, DOWN_Pin, GPIO_PIN_RESET);
-       modeMotorStatus = MODE_MOTOR_STATUS_IDLE;
-       brakeTimer = 0;
-       
-      if((modeCurrentPos + MOTOR_SMALLEST_STEP) < modeTargetPos)
-      {
-        modeMotorOut.modeMotorOutHigh = 0;
-        modeMotorOut.modeMotorOutLow= 100;
-      
-        modeMotorRunStep = MODE_MOTOR_RUN_STEP_FORWARD;
-        modeMotorStatus = MODE_MOTOR_STATUS_RUNNING;
-      }
-      else if(modeCurrentPos > (modeTargetPos + MOTOR_SMALLEST_STEP))
-      {
-        modeMotorOut.modeMotorOutHigh = 100;
-        modeMotorOut.modeMotorOutLow= 0;
+      HAL_GPIO_WritePin(UP_GPIO_Port, UP_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(DOWN_GPIO_Port, DOWN_Pin, GPIO_PIN_RESET);
+      brakeTimer = 0;
 
-        modeMotorRunStep = MODE_MOTOR_RUN_STEP_REVERSE;
-        modeMotorStatus = MODE_MOTOR_STATUS_RUNNING;
+      if(MODE_MOTOR_STATUS_START == modeMotorStatus)
+      {
+        if((modeCurrentPos + MOTOR_SMALLEST_STEP) < modeTargetPos)
+        {
+          modeMotorOut.modeMotorOutHigh = 0;
+          modeMotorOut.modeMotorOutLow= 100;
+        
+          modeMotorRunStep = MODE_MOTOR_RUN_STEP_FORWARD;
+          modeMotorStatus = MODE_MOTOR_STATUS_RUNNING;
+        }
+        else if(modeCurrentPos > (modeTargetPos + MOTOR_SMALLEST_STEP))
+        {
+          modeMotorOut.modeMotorOutHigh = 100;
+          modeMotorOut.modeMotorOutLow= 0;
+  
+          modeMotorRunStep = MODE_MOTOR_RUN_STEP_REVERSE;
+          modeMotorStatus = MODE_MOTOR_STATUS_RUNNING;
+        }
+        else
+        {
+          modeMotorRunStep = MODE_MOTOR_RUN_STEP_STOP;
+        }
       }
       break;
     }
@@ -298,26 +310,26 @@ static void MODE_MotorAction(void)
       /* Push delta value to buffer, length PARAMATERNUMBER */
       if(positionValueDelta < 100)
       {
-      for(i = 0; i < (PARAMATERNUMBER - 1); i++)
-      {
-        positionValueDeltaList[PARAMATERNUMBER - 1 - i] = positionValueDeltaList[PARAMATERNUMBER -2 - i];
-      }
-      positionValueDeltaList[0] = positionValueDelta;
-      /* Calculate average value, speed = delta S/ delta t */
-      positionValueDeltaAverage = 0;
-      for(i = 0; i < PARAMATERNUMBER; i++)
-      {
-        positionValueDeltaAverage = positionValueDeltaAverage + positionValueDeltaList[i];
-      }
-      positionValueDeltaAverage = positionValueDeltaAverage/PARAMATERNUMBER;
-      
-      if((modeCurrentPos + (PARAMATER * positionValueDeltaAverage)) > modeTargetPos)
-      {
-        modeMotorRunStep = MODE_MOTOR_RUN_STEP_BRAKE;
-
-        modeMotorOut.modeMotorOutHigh = 100;
-        modeMotorOut.modeMotorOutLow= 100;
-      }
+        for(i = 0; i < (PARAMATERNUMBER - 1); i++)
+        {
+          positionValueDeltaList[PARAMATERNUMBER - 1 - i] = positionValueDeltaList[PARAMATERNUMBER -2 - i];
+        }
+        positionValueDeltaList[0] = positionValueDelta;
+        /* Calculate average value, speed = delta S/ delta t */
+        positionValueDeltaAverage = 0;
+        for(i = 0; i < PARAMATERNUMBER; i++)
+        {
+          positionValueDeltaAverage = positionValueDeltaAverage + positionValueDeltaList[i];
+        }
+        positionValueDeltaAverage = positionValueDeltaAverage/PARAMATERNUMBER;
+        
+        if((modeCurrentPos + (PARAMATER * positionValueDeltaAverage)) > modeTargetPos)
+        {
+          modeMotorRunStep = MODE_MOTOR_RUN_STEP_BRAKE;
+  
+          modeMotorOut.modeMotorOutHigh = 100;
+          modeMotorOut.modeMotorOutLow= 100;
+        }
       }
       
       break;
@@ -336,28 +348,28 @@ static void MODE_MotorAction(void)
       /* Push delta value to buffer, length PARAMATERNUMBER */
       if(positionValueDelta < 100)
       {
-      for(i = 0; i < (PARAMATERNUMBER - 1); i++)
-      {
-        positionValueDeltaList[(PARAMATERNUMBER - 1) - i] = positionValueDeltaList[(PARAMATERNUMBER - 2) - i];
-      }
-      positionValueDeltaList[0] = positionValueDelta;
-
-      /* Calculate average value, speed = delta S/ delta t */
-      positionValueDeltaAverage = 0;
-      for(i = 0; i < PARAMATERNUMBER; i++)
-      {
-        positionValueDeltaAverage = positionValueDeltaAverage + positionValueDeltaList[i];
-      }
-      positionValueDeltaAverage = positionValueDeltaAverage/PARAMATERNUMBER;
-      
-      if(modeCurrentPos < (modeTargetPos + (PARAMATER * positionValueDeltaAverage)))
-      {
-        modeMotorRunStep = MODE_MOTOR_RUN_STEP_BRAKE;
-        brakeTimer = 0;
-
-        modeMotorOut.modeMotorOutHigh = 100;
-        modeMotorOut.modeMotorOutLow= 100;
-      }
+        for(i = 0; i < (PARAMATERNUMBER - 1); i++)
+        {
+          positionValueDeltaList[(PARAMATERNUMBER - 1) - i] = positionValueDeltaList[(PARAMATERNUMBER - 2) - i];
+        }
+        positionValueDeltaList[0] = positionValueDelta;
+  
+        /* Calculate average value, speed = delta S/ delta t */
+        positionValueDeltaAverage = 0;
+        for(i = 0; i < PARAMATERNUMBER; i++)
+        {
+          positionValueDeltaAverage = positionValueDeltaAverage + positionValueDeltaList[i];
+        }
+        positionValueDeltaAverage = positionValueDeltaAverage/PARAMATERNUMBER;
+        
+        if(modeCurrentPos < (modeTargetPos + (PARAMATER * positionValueDeltaAverage)))
+        {
+          modeMotorRunStep = MODE_MOTOR_RUN_STEP_BRAKE;
+          brakeTimer = 0;
+  
+          modeMotorOut.modeMotorOutHigh = 100;
+          modeMotorOut.modeMotorOutLow= 100;
+        }
       }
       break;
     }
@@ -369,6 +381,29 @@ static void MODE_MotorAction(void)
       }
       else
       {
+ #if 0
+        /* Check if arrived new Position again */
+        if((modeCurrentPos + MOTOR_SMALLEST_STEP) < modeTargetPos)
+        {
+          modeMotorOut.modeMotorOutHigh = 0;
+          modeMotorOut.modeMotorOutLow= 100;
+        
+          modeMotorRunStep = MODE_MOTOR_RUN_STEP_FORWARD;
+          modeMotorStatus = MODE_MOTOR_STATUS_RUNNING;
+        }
+        else if(modeCurrentPos > (modeTargetPos + MOTOR_SMALLEST_STEP))
+        {
+          modeMotorOut.modeMotorOutHigh = 100;
+          modeMotorOut.modeMotorOutLow= 0;
+  
+          modeMotorRunStep = MODE_MOTOR_RUN_STEP_REVERSE;
+          modeMotorStatus = MODE_MOTOR_STATUS_RUNNING;
+        }
+        else
+        {
+          /* Do nothing */
+        }
+#endif
         brakeTimer++;
       }
       
@@ -417,12 +452,13 @@ void MODE_ControlModeHandel(void)
 
   if(MODE_CONTROL_MODE_NONE == controlMode)
   {
-    if(((masterModeCommandOld != masterModeCommand) && (0xFFFF != masterTargetPosOld))|| (currentMode != masterModeCommand))
+    //if(((masterModeCommandOld != masterModeCommand) && (0xFFFF != masterTargetPosOld)) || (currentMode != masterModeCommand))
+    if(currentMode != masterModeCommand)
     {
       modeCommand = (MODE_COMMAND_E)masterModeCommand;
       controlMode = MODE_CONTROL_MODE_LIN_COMMAND;
     }
-    else if(masterTargetPosOld != masterTargetPos)
+    else if((masterTargetPosOld != masterTargetPos) && (0xFFFF != masterTargetPos))
     {
       modeCommand = MODE_INVALID;
       controlMode = MODE_CONTROL_MODE_LIN_POS;
@@ -534,6 +570,20 @@ void MODE_Task(void *argument)
     MODE_ControlModeHandel();
 
     positionValueOld = positionValueTemp;
+    
+    canData[0] = controlMode;
+    canData[1] = modeMotorStatus;
+    canData[2] = modeMotorRunStep;
+    canData[3] = modeRunStep;
+
+    canData[4] = (uint8_t)(modeTargetPos);
+    canData[5] = (uint8_t)(modeTargetPos >> 8);
+    canData[6] = (uint8_t)(modeTargetPos >> 16);
+
+
+    canData[7] = (uint8_t)(modeCurrentPos);
+    canData[8] = (uint8_t)(modeCurrentPos >> 8);
+    canData[9] = (uint8_t)(modeCurrentPos >> 16);
     
     osDelay(1);
   }

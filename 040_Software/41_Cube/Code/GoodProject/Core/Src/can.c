@@ -24,6 +24,8 @@
 extern uint16_t timerValue;
 extern uint16_t positionValue;
 
+uint8_t canData[10];
+
 /* USER CODE END 0 */
 
 CAN_HandleTypeDef hcan;
@@ -152,11 +154,23 @@ void HAL_CAN_Task(void * argument)
   uint32_t TxMailbox; 
   uint32_t std_id = 0x601;  
   
+  CAN_TxHeaderTypeDef TxHeaderB;
+  uint8_t TxDataB[8] = {0x55, 0x93, 0xE5, 0xE6, 0x55, 0x55, 0x08, 0x00};
+  uint32_t TxMailboxB; 
+  uint32_t std_idB = 0x602;  
+  
   TxHeader.RTR = CAN_RTR_DATA;
   TxHeader.IDE = CAN_ID_STD;            
   TxHeader.StdId=std_id;
   TxHeader.TransmitGlobalTime = DISABLE;
   TxHeader.DLC = 8;
+
+  TxHeaderB.RTR = CAN_RTR_DATA;
+  TxHeaderB.IDE = CAN_ID_STD;            
+  TxHeaderB.StdId=std_idB;
+  TxHeaderB.TransmitGlobalTime = DISABLE;
+  TxHeaderB.DLC = 8;
+  
 
   HAL_CAN_Start(&hcan);
 
@@ -167,13 +181,32 @@ void HAL_CAN_Task(void * argument)
 
     TxData[0] = positionValue >> 8;
     TxData[1] = positionValue;
+
+    TxData[2] = timerValue;
+
+    TxData[3] = canData[7];
+    TxData[4] = canData[8];
+    TxData[5] = canData[9];
+
+    TxDataB[0] = canData[0];
+    TxDataB[1] = canData[1];
+    TxDataB[2] = canData[2];
+    TxDataB[3] = canData[3];
+    TxDataB[4] = canData[4];
+    TxDataB[5] = canData[5];
+    TxDataB[6] = canData[6];
+    TxDataB[7] = canData[7];
 	
     if (HAL_CAN_AddTxMessage(&hcan, &TxHeader, TxData, &TxMailbox) != HAL_OK)
     {
        /* Transmission request Error */
        //Error_Handler();
     }
-  
+    if (HAL_CAN_AddTxMessage(&hcan, &TxHeaderB, TxDataB, &TxMailboxB) != HAL_OK)
+    {
+       /* Transmission request Error */
+       //Error_Handler();
+    }
     osDelay(1);
   }
 }

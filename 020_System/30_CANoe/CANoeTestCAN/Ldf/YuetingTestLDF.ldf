@@ -28,6 +28,9 @@ Signals {
   YT_STATUS_CurrentState: 4, 0, Yueting, LIN_Master ;
   YT_STATUS_Error: 1, 0, Yueting, LIN_Master ;
   YT_STATUS_Version: 8, 0, Yueting, LIN_Master ;
+  MASTER_InitRequest: 8, 0, LIN_Master, Yueting ;
+  MASTER_MVC_InitRequest: 8, 0, LIN_Master, Yueting ;
+  MASTER_TargetEnable: 8, 0, LIN_Master, Yueting ;
 }
 
 Diagnostic_signals {
@@ -59,6 +62,8 @@ Frames {
   MASTER: 4, LIN_Master, 8 {
     MASTER_ModeCommand, 0 ;
     MASTER_TargetPosition, 8 ;
+    MASTER_InitRequest, 32 ;
+    MASTER_TargetEnable, 24 ;
   }
   YT_CAL: 34, Yueting, 8 {
     YT_CAL_Mode, 0 ;
@@ -73,6 +78,7 @@ Frames {
   }
   MASTER_MVC: 52, LIN_Master, 8 {
     MASTER_MVC_OperationMode, 0 ;
+    MASTER_MVC_InitRequest, 8 ;
   }
   YT_STATUS: 53, Yueting, 8 {
     YT_STATUS_WorkingMode, 0 ;

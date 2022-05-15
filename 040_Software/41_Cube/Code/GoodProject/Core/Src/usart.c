@@ -29,7 +29,7 @@
 #include "i2c.h"
 #include "mode.h"
 
-#define SOFTWARE_VERSION_NUMBER    0x10
+#define SOFTWARE_VERSION_NUMBER    0x11
 #define LIN_BREAK_VALUE      0x00u
 #define LIN_SYNC_VALUE       0x55u
 
@@ -104,6 +104,8 @@ typedef struct
 {
   uint8_t masterModeCommand;
   uint16_t masterTargetPos;
+  uint8_t masterTargetEnable;
+  uint8_t masterInitRequest;
 }LIN_MASTER_MESSAGE_S;
 
 typedef union
@@ -112,9 +114,16 @@ typedef union
   uint8_t dataArray[8];
 }LIN_MASTER_MESSAGE_U;
 
-typedef union
+
+typedef struct
 {
   uint8_t masterModeCommand;
+  uint8_t masterInitRequest;
+}LIN_MASTERMCV_MESSAGE_S;
+
+typedef union
+{
+  LIN_MASTERMCV_MESSAGE_S message;
   uint8_t dataArray[8];
 }LIN_MASTERMCV_MESSAGE_U;
 
@@ -472,6 +481,7 @@ static void LIN_RX_MASTER_MessagesUpdate(void)
 {
   uint8_t i;
   uint16_t linMasterTargetPositionValue;
+  uint8_t linMasterTargetEnableValue;
   uint8_t linMasterModeCommandValue;
 
   if(LIN_RX_MASTER_ID == linTransferData.id)
@@ -482,9 +492,25 @@ static void LIN_RX_MASTER_MessagesUpdate(void)
     }
     linMasterModeCommandValue = linMasterMessage.message.masterModeCommand;
     linMasterTargetPositionValue = linMasterMessage.message.masterTargetPos;
+    linMasterTargetEnableValue = linMasterMessage.message.masterTargetEnable;
+
+    if(SET == linMasterTargetEnableValue)
+    {
+      linMasterTargetPositionValue = linMasterMessage.message.masterTargetPos;
+    }
+    else
+    {
+      linMasterTargetPositionValue = 0xFFFF;
+    }
 
     osMessageQueuePut(LIN_MasterModeCommandQueueHandle, (void *)&linMasterModeCommandValue, 0, 0);
     osMessageQueuePut(LIN_MasterTargetPositionQueueHandle, (void *)&linMasterTargetPositionValue, 0, 0);
+
+    if(SET == linMasterMessage.message.masterInitRequest)
+    {
+        __set_FAULTMASK(1);           
+        HAL_NVIC_SystemReset();
+    }
   }
 }
 
@@ -499,9 +525,15 @@ static void LIN_RX_MASTERMCV_MessagesUpdate(void)
     {
       linMasterMcvMessage.dataArray[i] = linTransferData.dataArray[i];
     }
-    linMasterModeCommandValue = linMasterMcvMessage.masterModeCommand;
+    linMasterModeCommandValue = linMasterMcvMessage.message.masterModeCommand;
 
     osMessageQueuePut(LIN_MasterModeCommandQueueHandle, (void *)&linMasterModeCommandValue, 0, 0);
+
+    if(SET == linMasterMcvMessage.message.masterInitRequest)
+    {
+        __set_FAULTMASK(1);           
+        HAL_NVIC_SystemReset();
+    }
   }
 }
 
