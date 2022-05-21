@@ -42,6 +42,8 @@ void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 void HAL_UART_Task(void * argument);
+uint8_t LIN_RX_MASTER_ReceiveFlagGet(void);
+void LIN_RX_MASTERCAL_MessagesUpdate(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

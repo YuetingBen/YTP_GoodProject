@@ -29,7 +29,7 @@
 #include "i2c.h"
 #include "mode.h"
 
-#define SOFTWARE_VERSION_NUMBER    0x11
+#define SOFTWARE_VERSION_NUMBER    0x12
 #define LIN_BREAK_VALUE      0x00u
 #define LIN_SYNC_VALUE       0x55u
 
@@ -184,8 +184,8 @@ typedef union
 }LIN_MASTERCAL_MESSAGE_U;
 #pragma pack ()
 
-
-
+static uint8_t linMasterReceivedFlag = RESET;
+static uint8_t linMasterMcvReceivedFlag = RESET;
 
 static LIN_DATA_S linTransferData;
 static LIN_STATE_E linState = LIN_STATE_IDLE;
@@ -511,7 +511,10 @@ static void LIN_RX_MASTER_MessagesUpdate(void)
         __set_FAULTMASK(1);           
         HAL_NVIC_SystemReset();
     }
+
+    linMasterReceivedFlag = SET;
   }
+
 }
 
 static void LIN_RX_MASTERMCV_MessagesUpdate(void)
@@ -534,10 +537,28 @@ static void LIN_RX_MASTERMCV_MessagesUpdate(void)
         __set_FAULTMASK(1);           
         HAL_NVIC_SystemReset();
     }
+
+    linMasterMcvReceivedFlag = SET;
   }
 }
 
-static void LIN_RX_MASTERCAL_MessagesUpdate(void)
+uint8_t LIN_RX_MASTERMCV_ReceiveFlagGet(void)
+{
+  uint8_t retVal;
+  retVal = linMasterMcvReceivedFlag;
+  linMasterMcvReceivedFlag = RESET;
+  return((uint8_t)retVal);
+}
+
+uint8_t LIN_RX_MASTER_ReceiveFlagGet(void)
+{
+  uint8_t retVal;
+  retVal = linMasterReceivedFlag;
+  linMasterReceivedFlag = RESET;
+  return((uint8_t)retVal);
+}
+
+void LIN_RX_MASTERCAL_MessagesUpdate(void)
 {
   uint8_t i;
   uint8_t posBuffer[4];

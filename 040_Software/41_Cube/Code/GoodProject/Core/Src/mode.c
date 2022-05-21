@@ -194,11 +194,20 @@ static void MODE_ModeCommandChange(void)
       if(modeCommand < MODE_MAX_NUM)
       {
         EEPROM_GetPosition(modeCommand, &firstPos, &secondtPos);
-        firstPos = firstPos * 10;
-        secondtPos = secondtPos * 10;
-        
-        modeRunStep = MODE_MODE_CHANGE_STEP_TO_FIRST_POSITION;
-        runCycle = 0;
+
+        /* Invalid position, Ignore */
+        if((0xFFFF == firstPos) ||(0xFFFF == secondtPos))
+        {
+          controlMode = MODE_CONTROL_MODE_NONE;
+        }
+        else
+        {
+          firstPos = firstPos * 10;
+          secondtPos = secondtPos * 10;
+          
+          modeRunStep = MODE_MODE_CHANGE_STEP_TO_FIRST_POSITION;
+          runCycle = 0;
+        }
       } 
       else
       {
@@ -222,13 +231,32 @@ static void MODE_ModeCommandChange(void)
       if((MODE_MOTOR_STATUS_IDLE == modeMotorStatus) || (MODE_MOTOR_STATUS_STOP == modeMotorStatus))
       {
         modeRunStep = MODE_MODE_CHANGE_STEP_TO_SECOND_POSITION;
-        runCycle = 0;
+        runCycle = 1;
       }
       break;
     }
     case MODE_MODE_CHANGE_STEP_TO_SECOND_POSITION:
     {
       modeTargetPos = secondtPos;
+
+      /* 
+      Example 1
+      modeCurrentPos = 230 + 360,  (runCycle = 1) 
+      secondtPos = 200, 
+      modeTargetPos shall equal 200 + 360, this means motor only need backword 230 + 360 - (200 + 360)= 30 degree;
+      Example 2
+      modeCurrentPos = 230 + 360,  (runCycle = 1) 
+      secondtPos = 300, 
+      modeTargetPos shall equal 200, this means motor only need backword 230 + 360 - 300 = 290 degree;
+      */
+      if((modeTargetPos + MOTOR_360_STEP) > modeCurrentPos + MOTOR_SMALLEST_STEP)
+      {
+        /* Do noithing */
+      }
+      else
+      {
+        modeTargetPos = modeTargetPos + MOTOR_360_STEP;
+      }
       modeMotorStatus = MODE_MOTOR_STATUS_START;
       modeRunStep = MODE_MODE_CHANGE_STEP_ARIVE_SECOND_POSITION;
       break;
@@ -446,26 +474,33 @@ void MODE_ControlModeHandel(void)
   static uint16_t timer;
 
   uint8_t *msg_prio;
+  uint8_t messageMasterReceiveFlag;
+  uint8_t messageMasterMCVReceiveFlag;
 
-  osMessageQueueGet(LIN_MasterModeCommandQueueHandle, (void *)&masterModeCommand, msg_prio, 0);
-  osMessageQueueGet(LIN_MasterTargetPositionQueueHandle, (void *)&masterTargetPos, msg_prio, 0);
+  messageMasterReceiveFlag = LIN_RX_MASTER_ReceiveFlagGet();
+  messageMasterMCVReceiveFlag = LIN_RX_MASTERMCV_ReceiveFlagGet();
 
   if(MODE_CONTROL_MODE_NONE == controlMode)
   {
-    //if(((masterModeCommandOld != masterModeCommand) && (0xFFFF != masterTargetPosOld)) || (currentMode != masterModeCommand))
-    if(currentMode != masterModeCommand)
+    if((SET == messageMasterReceiveFlag) || (SET == messageMasterMCVReceiveFlag))
     {
-      modeCommand = (MODE_COMMAND_E)masterModeCommand;
-      controlMode = MODE_CONTROL_MODE_LIN_COMMAND;
-    }
-    else if((masterTargetPosOld != masterTargetPos) && (0xFFFF != masterTargetPos))
-    {
-      modeCommand = MODE_INVALID;
-      controlMode = MODE_CONTROL_MODE_LIN_POS;
-    }
-    else
-    {
-      modeCommand = MODE_INVALID;
+      osMessageQueueGet(LIN_MasterModeCommandQueueHandle, (void *)&masterModeCommand, msg_prio, 0);
+      osMessageQueueGet(LIN_MasterTargetPositionQueueHandle, (void *)&masterTargetPos, msg_prio, 0);
+      //if(((masterModeCommandOld != masterModeCommand) && (0xFFFF != masterTargetPosOld)) || (currentMode != masterModeCommand))
+      if(currentMode != masterModeCommand)
+      {
+        modeCommand = (MODE_COMMAND_E)masterModeCommand;
+        controlMode = MODE_CONTROL_MODE_LIN_COMMAND;
+      }
+      else if((masterTargetPosOld != masterTargetPos) && (0xFFFF != masterTargetPos))
+      {
+        modeCommand = MODE_INVALID;
+        controlMode = MODE_CONTROL_MODE_LIN_POS;
+      }
+      else
+      {
+        modeCommand = MODE_INVALID;
+      }
     }
   }
 
