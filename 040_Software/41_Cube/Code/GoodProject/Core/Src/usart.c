@@ -29,7 +29,7 @@
 #include "i2c.h"
 #include "mode.h"
 
-#define SOFTWARE_VERSION_NUMBER    0x12
+#define SOFTWARE_VERSION_NUMBER       0x13
 #define LIN_BREAK_VALUE      0x00u
 #define LIN_SYNC_VALUE       0x55u
 
@@ -117,7 +117,8 @@ typedef union
 
 typedef struct
 {
-  uint8_t masterModeCommand;
+  uint8_t masterModeCommand : 4;
+  uint8_t reverse : 4;
   uint8_t masterInitRequest;
 }LIN_MASTERMCV_MESSAGE_S;
 

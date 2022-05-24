@@ -538,8 +538,8 @@ void MODE_ControlModeHandel(void)
   {
     MODE_MotorAction();
     modeCurrentStatus = MODE_CURRENT_STATUS_MOVING;
-    /* If running timer over 10s, report error */
-    if(timer > 10000)
+    /* If running timer over 30s, report error */
+    if(timer > 30000)
     {
       errorStatus = SET;
     }
