@@ -1,0 +1,160 @@
+
+
+LIN_description_file;
+LIN_protocol_version = "2.1";
+LIN_language_version = "2.1";
+LIN_speed = 19.2 kbps;
+
+Nodes {
+  Master: LIN_Master, 1 ms, 0 ms ;
+  Slaves: Yueting ;
+}
+
+Signals {
+  YT_SENT_Position: 16, 0, Yueting, LIN_Master ;
+  MASTER_ModeCommand: 8, 0, LIN_Master, Yueting ;
+  MASTER_TargetPosition: 16, 0, LIN_Master, Yueting ;
+  YT_SENT_Angle: 16, 0, Yueting, LIN_Master ;
+  YT_CAL_Mode: 8, 0, Yueting, LIN_Master ;
+  YT_CAL_FirstPos: 16, 0, Yueting, LIN_Master ;
+  YT_CAL_SecondPos: 16, 0, Yueting, LIN_Master ;
+  YT_CAL_Enable: 8, 0, Yueting ;
+  MASTER_CAL_Mode: 8, 0, LIN_Master, Yueting ;
+  MASTER_CAL_FirstPos: 16, 0, LIN_Master, Yueting ;
+  MASTER_CAL_SecondPos: 16, 0, LIN_Master, Yueting ;
+  MASTER_CAL_Enable: 8, 0, LIN_Master, Yueting ;
+  MASTER_MVC_OperationMode: 8, 0, LIN_Master, Yueting ;
+  YT_STATUS_WorkingMode: 8, 0, Yueting, LIN_Master ;
+  YT_STATUS_CurrentState: 4, 0, Yueting, LIN_Master ;
+  YT_STATUS_Error: 1, 0, Yueting, LIN_Master ;
+  YT_STATUS_Version: 8, 0, Yueting, LIN_Master ;
+  MASTER_InitRequest: 8, 0, LIN_Master, Yueting ;
+  MASTER_MVC_InitRequest: 8, 0, LIN_Master, Yueting ;
+  MASTER_TargetEnable: 8, 0, LIN_Master, Yueting ;
+}
+
+Diagnostic_signals {
+  MasterReqB0: 8, 0 ;
+  MasterReqB1: 8, 0 ;
+  MasterReqB2: 8, 0 ;
+  MasterReqB3: 8, 0 ;
+  MasterReqB4: 8, 0 ;
+  MasterReqB5: 8, 0 ;
+  MasterReqB6: 8, 0 ;
+  MasterReqB7: 8, 0 ;
+  SlaveRespB0: 8, 0 ;
+  SlaveRespB1: 8, 0 ;
+  SlaveRespB2: 8, 0 ;
+  SlaveRespB3: 8, 0 ;
+  SlaveRespB4: 8, 0 ;
+  SlaveRespB5: 8, 0 ;
+  SlaveRespB6: 8, 0 ;
+  SlaveRespB7: 8, 0 ;
+}
+
+
+
+Frames {
+  YT_SENT: 3, Yueting, 8 {
+    YT_SENT_Position, 0 ;
+    YT_SENT_Angle, 16 ;
+  }
+  MASTER: 4, LIN_Master, 8 {
+    MASTER_ModeCommand, 0 ;
+    MASTER_TargetPosition, 8 ;
+    MASTER_InitRequest, 32 ;
+    MASTER_TargetEnable, 24 ;
+  }
+  YT_CAL: 34, Yueting, 8 {
+    YT_CAL_Mode, 0 ;
+    YT_CAL_FirstPos, 8 ;
+    YT_CAL_SecondPos, 24 ;
+  }
+  MASTER_CAL: 33, LIN_Master, 8 {
+    MASTER_CAL_Mode, 0 ;
+    MASTER_CAL_FirstPos, 8 ;
+    MASTER_CAL_SecondPos, 24 ;
+    MASTER_CAL_Enable, 40 ;
+  }
+  MASTER_MVC: 52, LIN_Master, 8 {
+    MASTER_MVC_OperationMode, 0 ;
+    MASTER_MVC_InitRequest, 8 ;
+  }
+  YT_STATUS: 53, Yueting, 8 {
+    YT_STATUS_WorkingMode, 0 ;
+    YT_STATUS_CurrentState, 8 ;
+    YT_STATUS_Error, 12 ;
+    YT_STATUS_Version, 56 ;
+  }
+}
+
+
+
+Diagnostic_frames {
+  MasterReq: 0x3c {
+    MasterReqB0, 0 ;
+    MasterReqB1, 8 ;
+    MasterReqB2, 16 ;
+    MasterReqB3, 24 ;
+    MasterReqB4, 32 ;
+    MasterReqB5, 40 ;
+    MasterReqB6, 48 ;
+    MasterReqB7, 56 ;
+  }
+  SlaveResp: 0x3d {
+    SlaveRespB0, 0 ;
+    SlaveRespB1, 8 ;
+    SlaveRespB2, 16 ;
+    SlaveRespB3, 24 ;
+    SlaveRespB4, 32 ;
+    SlaveRespB5, 40 ;
+    SlaveRespB6, 48 ;
+    SlaveRespB7, 56 ;
+  }
+}
+
+Node_attributes {
+  Yueting{
+    LIN_protocol = "2.1" ;
+    configured_NAD = 0xFF ;
+    initial_NAD = 0xFF ;
+    product_id = 0x0, 0x0, 255 ;
+    P2_min = 50 ms ;
+    ST_min = 0 ms ;
+    N_As_timeout = 1000 ms ;
+    N_Cr_timeout = 1000 ms ;
+    configurable_frames {
+      YT_SENT ;
+      MASTER ;
+      YT_CAL ;
+      MASTER_CAL ;
+      MASTER_MVC ;
+      YT_STATUS ;
+    }
+  }
+}
+
+Schedule_tables {
+ CalTable {
+    YT_SENT delay 10 ms ;
+    MASTER delay 10 ms ;
+    MASTER_CAL delay 10 ms ;
+    YT_CAL delay 10 ms ;
+    YT_STATUS delay 10 ms ;
+  }
+ Normall {
+    MASTER_MVC delay 10 ms ;
+    YT_STATUS delay 10 ms ;
+  }
+}
+
+
+Signal_encoding_types {
+  YTSENTAngleEncoding {
+    physical_value, 0, 3600, 0.1, 0 ;
+  }
+}
+
+Signal_representation {
+  YTSENTAngleEncoding: YT_SENT_Angle ;
+}
