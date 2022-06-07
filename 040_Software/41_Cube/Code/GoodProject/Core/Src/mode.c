@@ -21,6 +21,17 @@
 #define MOTOR_BOUNDARY_VALUE_STEP     100u
 #define MOTOR_ERROR_DETECT_TIMER 60000u  /*   60s */
 #define MOTOR_ERROR_RECOVERY_TIMER 60000u  /*   60s */
+
+typedef enum
+{
+  MODE_VALVE_TYPE_INVALID = 0x00,
+  MODE_VALVE_TYPE_SIGNAL = 0x01,
+  MODE_VALVE_TYPE_DOUBLE = 0x02,
+  MODE_VALVE_TYPE_SIGNAL_TEST = 0xA1,
+  MODE_VALVE_TYPE_DOUBLE_TEST = 0xA2,
+  MODE_VALVE_TYPE_MAX_NUM
+}MODE_VALVE_TYPE_E;
+
 typedef enum
 {
   MODE_0 = 0x00,
@@ -43,6 +54,7 @@ typedef enum
   MODE_CONTROL_MODE_LIN_POS,
   MODE_CONTROL_MODE_KEY_COMMAND,
   MODE_CONTROL_MODE_KEY_RUN,
+  MODE_CONTROL_MODE_DOUBLE_VALVE_CYCLE_TEST,
   MODE_CONTROL_MODE_MAX_NUM
 }MODE_CONTROL_MODE_E;
 
@@ -67,7 +79,11 @@ typedef enum
   MODE_MODE_CHANGE_STEP_TO_FIRST_POSITION,
   MODE_MODE_CHANGE_STEP_ARIVE_FIRST_POSITION,
   MODE_MODE_CHANGE_STEP_TO_SECOND_POSITION,
-  MODE_MODE_CHANGE_STEP_ARIVE_SECOND_POSITION
+  MODE_MODE_CHANGE_STEP_ARIVE_SECOND_POSITION,
+  MODE_MODE_CHANGE_STEP_TO_THIRD_POSITION,
+  MODE_MODE_CHANGE_STEP_ARIVE_THIRD_POSITION,
+  MODE_MODE_CHANGE_STEP_TO_FOURTH_POSITION,
+  MODE_MODE_CHANGE_STEP_ARIVE_FOURTH_POSITION
 }MODE_MODE_CHANGE_STEP_S;
 
 typedef enum
@@ -122,7 +138,7 @@ static uint32_t modeCurrentPos;
 static uint32_t modeTargetPos;
 
 static uint16_t masterTargetPos;
-
+static MODE_VALVE_TYPE_E valveType;
 static MODE_CONTROL_MODE_E controlMode;
 
 static MODE_MOTOR_OUT_S modeMotorOut;
@@ -151,6 +167,8 @@ void MODE_Init(void)
   modeCurrentStatus = MODE_CURRENT_STATUS_NO_MOVEMENT;
   currentMode = MODE_INVALID;
   modeMotorStatus = MODE_MOTOR_STATUS_IDLE;
+
+  EEPROM_ReadRequest(EE_VALVE_TYPE, &valveType);
 }
 
 static void MODE_ModePositionChange(void)
@@ -183,8 +201,62 @@ static void MODE_ModePositionChange(void)
   }
 }
 
+static void MODE_ModeCommandChangeSignalValveCore(void)
+{
+  static uint16_t firstPos;
+  static uint16_t secondtPos;
 
-static void MODE_ModeCommandChange(void)
+  switch(modeRunStep)
+  {
+    case MODE_MODE_CHANGE_STEP_IDLE:
+    {
+      if(modeCommand < MODE_MAX_NUM)
+      {
+        EEPROM_GetPosition(modeCommand, &firstPos, &secondtPos);
+
+        /* Invalid position, Ignore */
+        if(0xFFFF == firstPos)
+        {
+          controlMode = MODE_CONTROL_MODE_NONE;
+        }
+        else
+        {
+          firstPos = firstPos * 10;
+          
+          modeRunStep = MODE_MODE_CHANGE_STEP_TO_FIRST_POSITION;
+          runCycle = 0;
+        }
+      } 
+      else
+      {
+        controlMode = MODE_CONTROL_MODE_NONE;
+      }
+      break;
+    }
+    case MODE_MODE_CHANGE_STEP_TO_FIRST_POSITION:
+    {
+      modeTargetPos = firstPos;
+      modeMotorStatus = MODE_MOTOR_STATUS_START;
+      modeRunStep = MODE_MODE_CHANGE_STEP_ARIVE_FIRST_POSITION;
+      break;
+    }
+    case MODE_MODE_CHANGE_STEP_ARIVE_FIRST_POSITION:
+    {
+      if((MODE_MOTOR_STATUS_IDLE == modeMotorStatus) || (MODE_MOTOR_STATUS_STOP == modeMotorStatus))
+      {
+        modeRunStep = MODE_MODE_CHANGE_STEP_IDLE;
+        controlMode = MODE_CONTROL_MODE_NONE;
+        runCycle = 0;
+
+        currentMode = modeCommand;
+      }
+      break;
+    }    
+  }
+}
+
+
+static void MODE_ModeCommandChangeDoubleValveCore(void)
 {
   //static MODE_MODE_CHANGE_STEP_S modeRunStep = MODE_MODE_CHANGE_STEP_IDLE;
   static uint16_t firstPos;
@@ -277,6 +349,151 @@ static void MODE_ModeCommandChange(void)
       break;
     }
     
+  }
+}
+
+
+static void MODE_ModeCommandChangeDoubleValveCoreCycleTest(void)
+{
+  //static MODE_MODE_CHANGE_STEP_S modeRunStep = MODE_MODE_CHANGE_STEP_IDLE;
+  static uint16_t firstPos;
+  static uint16_t secondtPos;
+  static uint16_t thirdPos;
+  static uint16_t fourthPos;
+
+  switch(modeRunStep)
+  {
+    case MODE_MODE_CHANGE_STEP_IDLE:
+    {
+      EEPROM_GetPosition(EE_MODE0_POSITION, &firstPos, &secondtPos);
+      EEPROM_GetPosition(EE_MODE1_POSITION, &thirdPos, &fourthPos);
+      /* Invalid position, Ignore */
+      if((0xFFFF == firstPos) ||(0xFFFF == secondtPos) || (0xFFFF == thirdPos) || (0xFFFF == fourthPos))
+      {
+        controlMode = MODE_CONTROL_MODE_NONE;
+      }
+      else
+      {
+        firstPos = firstPos * 10;
+        secondtPos = secondtPos * 10;
+        thirdPos = thirdPos * 10;
+        fourthPos = fourthPos * 10;
+        
+        modeRunStep = MODE_MODE_CHANGE_STEP_TO_FIRST_POSITION;
+        runCycle = 0;
+      }
+      break;
+    }
+    case MODE_MODE_CHANGE_STEP_TO_FIRST_POSITION:
+    {
+      modeTargetPos = firstPos + 2 * MOTOR_360_STEP;
+      if(MOTOR_ONE_CYCLE_SMALLEST_STEP > (modeTargetPos - modeCurrentPos))
+      {
+        modeTargetPos = modeTargetPos + MOTOR_360_STEP;
+      }
+      modeMotorStatus = MODE_MOTOR_STATUS_START;
+      modeRunStep = MODE_MODE_CHANGE_STEP_ARIVE_FIRST_POSITION;
+      break;
+    }
+    case MODE_MODE_CHANGE_STEP_ARIVE_FIRST_POSITION:
+    {
+      if((MODE_MOTOR_STATUS_IDLE == modeMotorStatus) || (MODE_MOTOR_STATUS_STOP == modeMotorStatus))
+      {
+        modeRunStep = MODE_MODE_CHANGE_STEP_TO_SECOND_POSITION;
+        runCycle = 1;
+      }
+      break;
+    }
+    case MODE_MODE_CHANGE_STEP_TO_SECOND_POSITION:
+    {
+      modeTargetPos = secondtPos;
+
+      /* 
+      Example 1
+      modeCurrentPos = 230 + 360,  (runCycle = 1) 
+      secondtPos = 200, 
+      modeTargetPos shall equal 200 + 360, this means motor only need backword 230 + 360 - (200 + 360)= 30 degree;
+      Example 2
+      modeCurrentPos = 230 + 360,  (runCycle = 1) 
+      secondtPos = 300, 
+      modeTargetPos shall equal 200, this means motor only need backword 230 + 360 - 300 = 290 degree;
+      */
+      if((modeTargetPos + MOTOR_360_STEP) > modeCurrentPos + MOTOR_SMALLEST_STEP)
+      {
+        /* Do noithing */
+      }
+      else
+      {
+        modeTargetPos = modeTargetPos + MOTOR_360_STEP;
+      }
+      modeMotorStatus = MODE_MOTOR_STATUS_START;
+      modeRunStep = MODE_MODE_CHANGE_STEP_ARIVE_SECOND_POSITION;
+      break;
+    }
+    case MODE_MODE_CHANGE_STEP_ARIVE_SECOND_POSITION:
+    {
+      if((MODE_MOTOR_STATUS_IDLE == modeMotorStatus) || (MODE_MOTOR_STATUS_STOP == modeMotorStatus))
+      {
+        modeRunStep = MODE_MODE_CHANGE_STEP_TO_THIRD_POSITION;
+        runCycle = 2;
+      }
+      break;
+    }
+
+    case MODE_MODE_CHANGE_STEP_TO_THIRD_POSITION:
+    {
+      modeTargetPos = thirdPos;
+
+      modeMotorStatus = MODE_MOTOR_STATUS_START;
+      modeRunStep = MODE_MODE_CHANGE_STEP_ARIVE_THIRD_POSITION;
+      break;
+    }
+    case MODE_MODE_CHANGE_STEP_ARIVE_THIRD_POSITION:
+    {
+      if((MODE_MOTOR_STATUS_IDLE == modeMotorStatus) || (MODE_MOTOR_STATUS_STOP == modeMotorStatus))
+      {
+        modeRunStep = MODE_MODE_CHANGE_STEP_TO_FOURTH_POSITION;
+        runCycle = 0;
+      }
+      break;
+    }
+    case MODE_MODE_CHANGE_STEP_TO_FOURTH_POSITION:
+    {
+      modeTargetPos = secondtPos;
+      /* 
+      Example 1
+      modeCurrentPos = 90,  (runCycle = 0) 
+      fourthtPos = 270, 
+      modeTargetPos shall equal 270, this means motor only need forward 270 - 90 = 180 degree;
+      Example 2
+      modeCurrentPos = 300,  (runCycle = 0) 
+      secondtPos = 90, 
+      modeTargetPos shall equal 90 + 360, this means motor only need backword 90 + 360 - 300 = 150 degree;
+      */
+      if(modeTargetPos > (modeCurrentPos + MOTOR_SMALLEST_STEP))
+      {
+        /* Do noithing */
+      }
+      else
+      {
+        modeTargetPos = modeTargetPos +   MOTOR_360_STEP;
+      }
+      modeMotorStatus = MODE_MOTOR_STATUS_START;
+      modeRunStep = MODE_MODE_CHANGE_STEP_ARIVE_FOURTH_POSITION;
+      break;
+    }
+    case MODE_MODE_CHANGE_STEP_ARIVE_FOURTH_POSITION:
+    {
+      if((MODE_MOTOR_STATUS_IDLE == modeMotorStatus) || (MODE_MOTOR_STATUS_STOP == modeMotorStatus))
+      {
+        modeRunStep = MODE_MODE_CHANGE_STEP_TO_FIRST_POSITION;
+        //controlMode = MODE_CONTROL_MODE_NONE;
+        runCycle = 0;
+
+        //currentMode = modeCommand;
+      }
+      break;
+    }
   }
 }
 
@@ -516,6 +733,11 @@ void MODE_ControlModeHandel(void)
     }
   }
 
+  if(MODE_VALVE_TYPE_DOUBLE_TEST == valveType)
+  {
+    controlMode = MODE_CONTROL_MODE_DOUBLE_VALVE_CYCLE_TEST; 
+  }
+
   switch(controlMode)
   {
     case MODE_CONTROL_MODE_NONE:
@@ -524,7 +746,18 @@ void MODE_ControlModeHandel(void)
     }
     case MODE_CONTROL_MODE_LIN_COMMAND:
     {
-      MODE_ModeCommandChange();
+      if(MODE_VALVE_TYPE_SIGNAL == valveType)
+      {
+        MODE_ModeCommandChangeSignalValveCore();
+      }
+      else if(MODE_VALVE_TYPE_DOUBLE == valveType)
+      {
+        MODE_ModeCommandChangeDoubleValveCore();
+      }
+      else
+      {
+        /* Do nothing */
+      }
       break;
     }
     case MODE_CONTROL_MODE_LIN_POS:
@@ -540,6 +773,11 @@ void MODE_ControlModeHandel(void)
     {
       break;
     }
+    case MODE_CONTROL_MODE_DOUBLE_VALVE_CYCLE_TEST:
+    {
+      MODE_ModeCommandChangeDoubleValveCoreCycleTest();
+      break;
+    }
     default:
     {
       break;
@@ -551,7 +789,10 @@ void MODE_ControlModeHandel(void)
     /* If running timer over 60s, report error */
     if(timer > MOTOR_ERROR_DETECT_TIMER)
     {
-      errorStatus = SET;
+      if((MODE_VALVE_TYPE_SIGNAL == valveType) || (MODE_VALVE_TYPE_DOUBLE == valveType) )
+      {
+        errorStatus = SET;
+      }
       timer = 0;
     }
     else
@@ -597,9 +838,8 @@ void MODE_Task(void *argument)
   uint8_t *msg_prio;
   static uint16_t errorRecoveryTimer;
   
-  MODE_Init();
   osDelay(1000);
-
+  MODE_Init();
   for(;;)
   {
     positionValueTemp = positionValue;

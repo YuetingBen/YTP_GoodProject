@@ -29,7 +29,7 @@
 #include "i2c.h"
 #include "mode.h"
 
-#define SOFTWARE_VERSION_NUMBER       0x14
+#define SOFTWARE_VERSION_NUMBER       0x15
 #define LIN_BREAK_VALUE      0x00u
 #define LIN_SYNC_VALUE       0x55u
 
@@ -162,6 +162,7 @@ typedef struct
   uint8_t mode;
   uint16_t firstPos;
   uint16_t secondPos;
+  uint8_t valveType;
 }LIN_YTCAL_MESSAGE_S;
 
 typedef union
@@ -435,7 +436,7 @@ void HAL_UART_RxManage(void)
       }
       else
       {
-        linState = LIN_STATE_IGNORE_DATA;
+        linState = LIN_STATE_IDLE;
       }
       break;
     }
@@ -579,6 +580,15 @@ void LIN_RX_MASTERCAL_MessagesUpdate(void)
       posBuffer[3] = (uint8_t)(linMasterCalMessage.message.secondPos >> 8);
       EEPROM_WriteRequest(linMasterCalMessage.message.mode, posBuffer);
     }
+    /* Config valve type */
+    else if(0xAA == linMasterCalMessage.message.enable)
+    {
+      EEPROM_WriteRequest(EE_VALVE_TYPE, &linMasterCalMessage.dataArray[0]);
+    }
+    else
+    {
+      /* Do Nothing */
+    }
   }
 }
 
@@ -648,6 +658,7 @@ static void LIN_TX_YTCAL_MessagesUpdate(void)
 {
   static EE_ITEM_E modeName;
   uint8_t posBuffer[4];
+  uint8_t valveType;
   
   if(modeName < EE_MODE8_POSITION)
   {
@@ -659,10 +670,12 @@ static void LIN_TX_YTCAL_MessagesUpdate(void)
   }
 
   EEPROM_ReadRequest(modeName, posBuffer);
+  EEPROM_ReadRequest(EE_VALVE_TYPE, &valveType);
 
   linYtCalMessage.message.mode = (uint8_t)modeName;
   linYtCalMessage.message.firstPos = (uint16_t)(posBuffer[0] + posBuffer[1] * 256);
   linYtCalMessage.message.secondPos = (uint16_t)(posBuffer[2] + posBuffer[3] * 256);
+  linYtCalMessage.message.valveType = (uint8_t)(valveType);
   
 }
 

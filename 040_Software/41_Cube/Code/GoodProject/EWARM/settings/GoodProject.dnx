@@ -18,7 +18,7 @@
         <LeaveTargetRunning>_ 0</LeaveTargetRunning>
     </StLinkDriver>
     <DebugChecksum>
-        <Checksum>3187268186</Checksum>
+        <Checksum>622056582</Checksum>
     </DebugChecksum>
     <Exceptions>
         <StopOnUncaught>_ 0</StopOnUncaught>
@@ -39,12 +39,11 @@
         <LeaveTargetRunning>_ 0</LeaveTargetRunning>
     </JLinkDriver>
     <struct_types>
-        <Fmt0>EE_DATA_TYPE_S-testDataU16	4	0</Fmt0>
-        <Fmt1>EE_DATA_TYPE_S-testDataU8	4	0</Fmt1>
-        <Fmt2>EE_POSITION_S-firstPosition	4	0</Fmt2>
-        <Fmt3>EE_POSITION_S-secondPosition	4	0</Fmt3>
-        <Fmt4>LIN_DATA_S-dataBufferIndex	3	0</Fmt4>
-        <Fmt5>PWM_MOTOR_OUT_S-pwmMotorOutHigh	3	0</Fmt5>
+        <Fmt0>EE_DATA_TYPE_S-testDataU8	4	0</Fmt0>
+        <Fmt1>EE_POSITION_S-firstPosition	4	0</Fmt1>
+        <Fmt2>EE_POSITION_S-secondPosition	4	0</Fmt2>
+        <Fmt3>LIN_DATA_S-dataBufferIndex	3	0</Fmt3>
+        <Fmt4>PWM_MOTOR_OUT_S-pwmMotorOutHigh	3	0</Fmt4>
     </struct_types>
     <array_types>
         <Fmt0>uint8_t[10]	3	0</Fmt0>
@@ -73,8 +72,10 @@
         <mode>0</mode>
     </DisassembleMode>
     <Breakpoints2>
-        <Bp0>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\mode.c}.242.7" 0 0 1 "" 0 "" 0</Bp0>
-        <Count>1</Count>
+        <Bp0>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\usart.c}.392.7" 0 0 1 "" 0 "" 0</Bp0>
+        <Bp1>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\usart.c}.529.5" 0 0 1 "" 0 "" 0</Bp1>
+        <Bp2>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\usart.c}.550.3" 0 0 1 "" 0 "" 0</Bp2>
+        <Count>3</Count>
     </Breakpoints2>
     <LogFile>
         <LoggingEnabled>_ 0</LoggingEnabled>
@@ -106,4 +107,4 @@
 [JLinkDriver]
 TraceBufferSize=0x00010000
 TraceStallIfFIFOFull=0x00000000
-TracePortSize=0x00000000
+TracePortSize=0x00000004

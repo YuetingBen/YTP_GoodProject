@@ -38,7 +38,7 @@ typedef struct
 typedef struct
 {
   EE_POSITION_S eePosition[9];
-  uint16_t testDataU16;
+  uint8_t valveType;
   uint8_t testDataU8;
   uint8_t testDataU8Arrat[5];
 }EE_DATA_TYPE_S;
@@ -73,7 +73,7 @@ static EE_DATA_TYPE_S eeDefaultData = {\
   {0x0B37, 0x0937},
   {0x0B37, 0x0937},
   {0x0C08, 0x0838}},
-  0xabcd,
+  0x01,
   0x86,
   {0x1a, 0x1b, 0x1c, 0x1d, 0x1e}
   };
@@ -145,12 +145,12 @@ static EE_HANDEL_TYPE_S eeData[EE_MODE_MAX_NUM_ITEM] = {\
   sizeof(EE_POSITION_S), 
   (uint16_t)((uint8_t *)&eeDefaultData.eePosition[EE_MODE8_POSITION] - (uint8_t *)&eeDefaultData)},
 
-  /* EE_A */
-  {EE_A, EE_IDEL, 
-  (uint8_t *)&eeMirrorData.testDataU16, 
-  (uint8_t *)&eeDefaultData.testDataU16, 
-  sizeof(uint16_t), 
-  (uint16_t)((uint8_t *)&eeDefaultData.testDataU16 - (uint8_t *)&eeDefaultData)},
+  /* EE_VALVE_TYPE */
+  {EE_VALVE_TYPE, EE_IDEL, 
+  (uint8_t *)&eeMirrorData.valveType, 
+  (uint8_t *)&eeDefaultData.valveType, 
+  sizeof(uint8_t), 
+  (uint16_t)((uint8_t *)&eeDefaultData.valveType - (uint8_t *)&eeDefaultData)},
 
   /* EE_B */
   {EE_B, EE_IDEL, 

@@ -23,11 +23,17 @@ on key 'b'
   linChangeSchedTable(1);
 }
 
+on key 'c'
+{
+  MASTER_CAL_Frame.byte(0) = 0x01;
+  MASTER_CAL_Frame.byte(5) = 0xAA;
+  output(MASTER_CAL_Frame);
+}
+
 on timer calTimer
 {
-  word calibrationFirstPosArray[9] = {2409, 2770, 2409, 964, 2770, 3011, 2409, 1813, 2178};
-  word calibrationSecondPosArray[9] = {1204, 1566, 1807, 964, 964, 2409, 602, 843, 973};
-
+word calibrationFirstPosArray[9] = {3975, 3613, 4059, 807, 3517, 536, 65535, 65535, 65535};
+word calibrationSecondPosArray[9] = {3252, 3252, 2855, 2855, 687, 416, 65535, 65535, 65535};
 
   if(mode <= 8)
   {
