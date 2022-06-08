@@ -39,8 +39,6 @@ typedef struct
 {
   EE_POSITION_S eePosition[9];
   uint8_t valveType;
-  uint8_t testDataU8;
-  uint8_t testDataU8Arrat[5];
 }EE_DATA_TYPE_S;
 #pragma pack ()
 
@@ -74,8 +72,6 @@ static EE_DATA_TYPE_S eeDefaultData = {\
   {0x0B37, 0x0937},
   {0x0C08, 0x0838}},
   0x01,
-  0x86,
-  {0x1a, 0x1b, 0x1c, 0x1d, 0x1e}
   };
 
 static EE_DATA_TYPE_S eeMirrorData = {0};
@@ -151,21 +147,6 @@ static EE_HANDEL_TYPE_S eeData[EE_MODE_MAX_NUM_ITEM] = {\
   (uint8_t *)&eeDefaultData.valveType, 
   sizeof(uint8_t), 
   (uint16_t)((uint8_t *)&eeDefaultData.valveType - (uint8_t *)&eeDefaultData)},
-
-  /* EE_B */
-  {EE_B, EE_IDEL, 
-  (uint8_t *)&eeMirrorData.testDataU8, 
-  (uint8_t *)&eeDefaultData.testDataU8, 
-  sizeof(uint8_t), 
-  (uint16_t)((uint8_t *)&eeDefaultData.testDataU8 - (uint8_t *)&eeDefaultData)},
-
-
-  /* EE_C */
-  {EE_C, EE_IDEL, 
-  (uint8_t *)&eeMirrorData.testDataU8Arrat, 
-  (uint8_t *)&eeDefaultData.testDataU8Arrat, 
-  5, 
-  (uint16_t)((uint8_t *)&eeDefaultData.testDataU8Arrat - (uint8_t *)&eeDefaultData)},
   };
 
 void EEPROM_Task(void *argument);
@@ -337,9 +318,9 @@ static void EEPROM_DataInitRead(void)
   uint8_t i;
   uint8_t j;
   uint8_t checkSum;
-  uint8_t dataReadBuffer[10];
+  static uint8_t dataReadBuffer[10];
   /* Read out checksum */
-  EEPROM_Read(EEPROM_CHECKSUM_ADDRESS, (uint8_t *)&checkSumReadArray, sizeof(EE_DATA_TYPE_S));
+  EEPROM_Read(EEPROM_CHECKSUM_ADDRESS, (uint8_t *)&checkSumReadArray, EE_MODE_MAX_NUM_ITEM);
   /* Calculate checkSum based on data buffer */
   for(i = 0; i < EE_MODE_MAX_NUM_ITEM; i++)
   {
@@ -397,6 +378,7 @@ static void EEPROM_Handel(void)
 
 void EEPROM_Task(void *argument)
 {
+  osDelay(500);
   EEPROM_DataInitRead();
   for(;;)
   {

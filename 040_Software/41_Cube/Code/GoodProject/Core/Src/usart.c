@@ -29,7 +29,7 @@
 #include "i2c.h"
 #include "mode.h"
 
-#define SOFTWARE_VERSION_NUMBER       0x15
+#define SOFTWARE_VERSION_NUMBER       0x16
 #define LIN_BREAK_VALUE      0x00u
 #define LIN_SYNC_VALUE       0x55u
 

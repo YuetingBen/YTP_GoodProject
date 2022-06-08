@@ -18,7 +18,7 @@
         <LeaveTargetRunning>_ 0</LeaveTargetRunning>
     </StLinkDriver>
     <DebugChecksum>
-        <Checksum>622056582</Checksum>
+        <Checksum>3069634614</Checksum>
     </DebugChecksum>
     <Exceptions>
         <StopOnUncaught>_ 0</StopOnUncaught>
@@ -46,7 +46,7 @@
         <Fmt4>PWM_MOTOR_OUT_S-pwmMotorOutHigh	3	0</Fmt4>
     </struct_types>
     <array_types>
-        <Fmt0>uint8_t[10]	3	0</Fmt0>
+        <Fmt0>uint8_t[10]	4	0</Fmt0>
         <Fmt1>uint8_t[30]	3	0</Fmt1>
         <Fmt2>uint8_t[4]	4	0</Fmt2>
         <Fmt3>uint8_t[5]	4	0</Fmt3>
@@ -72,9 +72,9 @@
         <mode>0</mode>
     </DisassembleMode>
     <Breakpoints2>
-        <Bp0>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\usart.c}.392.7" 0 0 1 "" 0 "" 0</Bp0>
-        <Bp1>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\usart.c}.529.5" 0 0 1 "" 0 "" 0</Bp1>
-        <Bp2>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\usart.c}.550.3" 0 0 1 "" 0 "" 0</Bp2>
+        <Bp0>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\i2c.c}.386.5" 0 0 1 "" 0 "" 0</Bp0>
+        <Bp1>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\i2c.c}.325.3" 0 0 1 "" 0 "" 0</Bp1>
+        <Bp2>_ 1 "EMUL_CODE" "{$PROJ_DIR$\..\Core\Src\i2c.c}.343.9" 0 0 1 "" 0 "" 0</Bp2>
         <Count>3</Count>
     </Breakpoints2>
     <LogFile>
@@ -107,4 +107,4 @@
 [JLinkDriver]
 TraceBufferSize=0x00010000
 TraceStallIfFIFOFull=0x00000000
-TracePortSize=0x00000004
+TracePortSize=0x00000000

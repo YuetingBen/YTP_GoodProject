@@ -47,8 +47,6 @@ typedef enum
   EE_MODE7_POSITION,
   EE_MODE8_POSITION,
   EE_VALVE_TYPE,
-  EE_B,
-  EE_C,
   EE_MODE_MAX_NUM_ITEM
 }EE_ITEM_E;
 /* USER CODE END Private defines */
