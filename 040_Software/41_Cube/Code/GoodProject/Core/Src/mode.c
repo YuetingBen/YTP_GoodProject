@@ -215,13 +215,14 @@ static void MODE_ModeCommandChangeSignalValveCore(void)
         EEPROM_GetPosition(modeCommand, &firstPos, &secondtPos);
 
         /* Invalid position, Ignore */
-        if(0xFFFF == firstPos)
+        if((0xFFFF == firstPos) ||(0xFFFF == secondtPos))
         {
           controlMode = MODE_CONTROL_MODE_NONE;
         }
         else
         {
           firstPos = firstPos * 10;
+          secondtPos = secondtPos * 10;
           
           modeRunStep = MODE_MODE_CHANGE_STEP_TO_FIRST_POSITION;
           runCycle = 0;
@@ -244,6 +245,22 @@ static void MODE_ModeCommandChangeSignalValveCore(void)
     {
       if((MODE_MOTOR_STATUS_IDLE == modeMotorStatus) || (MODE_MOTOR_STATUS_STOP == modeMotorStatus))
       {
+        modeRunStep = MODE_MODE_CHANGE_STEP_TO_SECOND_POSITION;
+        runCycle = 0;
+      }
+      break;
+    }  
+    case MODE_MODE_CHANGE_STEP_TO_SECOND_POSITION:
+    {
+      modeTargetPos = secondtPos;
+      modeMotorStatus = MODE_MOTOR_STATUS_START;
+      modeRunStep = MODE_MODE_CHANGE_STEP_ARIVE_SECOND_POSITION;
+      break;
+    }
+    case MODE_MODE_CHANGE_STEP_ARIVE_SECOND_POSITION:
+    {
+      if((MODE_MOTOR_STATUS_IDLE == modeMotorStatus) || (MODE_MOTOR_STATUS_STOP == modeMotorStatus))
+      {
         modeRunStep = MODE_MODE_CHANGE_STEP_IDLE;
         controlMode = MODE_CONTROL_MODE_NONE;
         runCycle = 0;
@@ -251,7 +268,7 @@ static void MODE_ModeCommandChangeSignalValveCore(void)
         currentMode = modeCommand;
       }
       break;
-    }    
+    }
   }
 }
 
